@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/use-auth';
 import { Button, Input } from '../../components/ui';
 import { Logo } from '../../components/layout';
 import { SEO } from '../../components/common';
+import { env } from '../../lib/env';
 import { Lock, Info } from 'lucide-react';
 
 export function AdminLoginPage() {
@@ -82,24 +83,26 @@ export function AdminLoginPage() {
           </Button>
         </form>
 
-        {/* Demo Mode Helper */}
-        <div className="bg-gray-50 border border-gray-200 p-3.5 text-xs text-gray-600 space-y-1">
-          <div className="flex items-center gap-1.5 font-medium text-black">
-            <Info className="w-3.5 h-3.5 text-plum" />
-            <span>Local Fallback Demo Mode</span>
+        {/* Demo Mode Helper (Only visible when Supabase credentials are not configured) */}
+        {!env.isSupabaseConfigured && (
+          <div className="bg-gray-50 border border-gray-200 p-3.5 text-xs text-gray-600 space-y-1">
+            <div className="flex items-center gap-1.5 font-medium text-black">
+              <Info className="w-3.5 h-3.5 text-plum" />
+              <span>Local Fallback Demo Mode</span>
+            </div>
+            <p className="text-[11px] text-gray-500">
+              Any email with &ldquo;admin&rdquo; (e.g.{' '}
+              <code className="bg-white px-1 py-0.5 border border-gray-200 font-mono text-black">
+                admin@sanaat.pk
+              </code>
+              ) and password{' '}
+              <code className="bg-white px-1 py-0.5 border border-gray-200 font-mono text-black">
+                admin123
+              </code>{' '}
+              grants immediate admin access.
+            </p>
           </div>
-          <p className="text-[11px] text-gray-500">
-            Any email with &ldquo;admin&rdquo; (e.g.{' '}
-            <code className="bg-white px-1 py-0.5 border border-gray-200 font-mono text-black">
-              admin@sanaat.pk
-            </code>
-            ) and password{' '}
-            <code className="bg-white px-1 py-0.5 border border-gray-200 font-mono text-black">
-              admin123
-            </code>{' '}
-            grants immediate admin access.
-          </p>
-        </div>
+        )}
 
         <div className="text-center pt-2">
           <Link
