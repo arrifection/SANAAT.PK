@@ -67,7 +67,19 @@ export function createMockServices(): Services {
   }
 
   const products: Product[] = loadOrFallback(STORAGE_KEYS.PRODUCTS, seedProducts);
-  const images: ProductImage[] = loadOrFallback(STORAGE_KEYS.IMAGES, seedImages);
+  const rawImages: ProductImage[] = loadOrFallback(STORAGE_KEYS.IMAGES, seedImages);
+
+  // Auto-heal legacy cached broken URLs in localStorage
+  const images: ProductImage[] = rawImages.map((img) => {
+    let url = img.url;
+    if (url.includes('photo-1583391733956-6c78276477e2')) {
+      url = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=900&q=85&auto=format&fit=crop';
+    } else if (url.includes('photo-1583391733981-8b530eaef1c1')) {
+      url = 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?w=900&q=85&auto=format&fit=crop';
+    }
+    return { ...img, url };
+  });
+
   const variants: ProductVariant[] = loadOrFallback(STORAGE_KEYS.VARIANTS, seedVariants);
 
   // Load orders and purge any hardcoded sample orders (Amina Tariq, Zainab Qureshi, ord-1001, ord-1002)

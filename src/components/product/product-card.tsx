@@ -21,6 +21,8 @@ interface ProductCardProps {
 export function ProductCard({ product, priority = false }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
   const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const [primaryError, setPrimaryError] = useState(false);
+  const [secondaryError, setSecondaryError] = useState(false);
 
   const displayStatus = getDisplayStatus(product, product.variants);
   const isOutOfStock = displayStatus === 'out_of_stock';
@@ -30,7 +32,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 
   const primaryImage = product.images[0]?.url ?? null;
   const secondaryImage = product.images[1]?.url ?? null;
-  const hasSecondImage = !!secondaryImage;
+  const hasSecondImage = !!secondaryImage && !secondaryError;
 
   const hasDiscount =
     product.compare_at_price !== null && product.compare_at_price > product.price;
@@ -58,18 +60,20 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
                 hovered && hasSecondImage ? 'opacity-0' : 'opacity-100',
               )}
             >
-              {primaryImage ? (
+              {primaryImage && !primaryError ? (
                 <img
                   src={primaryImage}
                   alt={product.images[0]?.alt_text ?? product.name}
                   className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                   loading={priority ? 'eager' : 'lazy'}
+                  onError={() => setPrimaryError(true)}
                 />
               ) : (
-                <div className="h-full w-full flex items-center justify-center bg-gray-100">
-                  <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <div className="h-full w-full flex flex-col items-center justify-center bg-gray-100 p-4 text-center">
+                  <svg className="w-8 h-8 text-gray-300 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
+                  <span className="text-[10px] font-sans uppercase tracking-widest text-gray-400">Sanaat Collection</span>
                 </div>
               )}
             </div>
@@ -87,6 +91,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
                   alt={product.images[1]?.alt_text ?? `${product.name} alternate`}
                   className="h-full w-full object-cover"
                   loading="lazy"
+                  onError={() => setSecondaryError(true)}
                 />
               </div>
             )}

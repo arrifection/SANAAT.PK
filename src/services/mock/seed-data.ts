@@ -226,7 +226,7 @@ export const seedImages: ProductImage[] = [
   {
     id: 'img-noor-1',
     product_id: 'prod-noor-001',
-    url: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=900&q=85&auto=format&fit=crop',
+    url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=900&q=85&auto=format&fit=crop',
     storage_path: null,
     alt_text: 'Noor — Embroidered Khaddar Ensemble front view',
     position: 0,
@@ -260,7 +260,7 @@ export const seedImages: ProductImage[] = [
   {
     id: 'img-mehr-2',
     product_id: 'prod-mehr-002',
-    url: 'https://images.unsplash.com/photo-1583391733981-8b530eaef1c1?w=900&q=85&auto=format&fit=crop',
+    url: 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?w=900&q=85&auto=format&fit=crop',
     storage_path: null,
     alt_text: 'Mehr — Artisanal hand embroidery work',
     position: 1,
@@ -286,7 +286,7 @@ export const seedImages: ProductImage[] = [
   {
     id: 'img-aira-2',
     product_id: 'prod-aira-003',
-    url: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=900&q=85&auto=format&fit=crop',
+    url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=900&q=85&auto=format&fit=crop',
     storage_path: null,
     alt_text: 'Aira — Fabric texture & drape',
     position: 1,
@@ -330,7 +330,7 @@ export const seedImages: ProductImage[] = [
   {
     id: 'img-zoya-2',
     product_id: 'prod-zoya-005',
-    url: 'https://images.unsplash.com/photo-1583391733981-8b530eaef1c1?w=900&q=85&auto=format&fit=crop',
+    url: 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?w=900&q=85&auto=format&fit=crop',
     storage_path: null,
     alt_text: 'Zoya — Handcrafted details',
     position: 1,

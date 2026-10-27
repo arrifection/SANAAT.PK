@@ -31,8 +31,7 @@ export const brandStatement = {
 /** About Content for About Page */
 export const aboutContent = {
   pageTitle: 'Our Story',
-  heroImageUrl:
-    'https://images.unsplash.com/photo-1597983073512-ce20e7781138?w=1400&q=80',
+  heroImageUrl: '/images/story/our-story.webp',
   paragraphs: [
     `SANAAT was born from a simple conviction: that the rich textile heritage of Pakistan deserves a place in the modern wardrobe — not as costume, but as considered, everyday luxury. The name itself, drawn from the Urdu word for "craft," is both our identity and our promise.`,
     `Every garment begins with cloth sourced from artisan ateliers across Pakistan — pure cotton lawns, flowing silks, and rich khaddar textiles selected for drape, hand-feel, and enduring integrity.`,
@@ -74,7 +73,7 @@ export const editorialStrip = {
   videoPoster: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&q=85&auto=format&fit=crop',
   images: [
     {
-      url: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=800&q=85&auto=format&fit=crop',
+      url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=900&q=85&auto=format&fit=crop',
       title: 'Embroidered Formals',
     },
     {

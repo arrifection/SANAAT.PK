@@ -1,11 +1,11 @@
 # Dependencies
 node_modules/
 
-# Environment files (keep .env.example)
+# Environment files (keep .env.example and public .env.production)
 .env
 .env.local
-.env.production
 .env.*.local
+!.env.production
 
 # Build output
 dist/
