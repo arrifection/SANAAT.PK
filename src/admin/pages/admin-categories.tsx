@@ -4,7 +4,7 @@ import { slugify } from '../../utils';
 import { Button, Input, Modal, Textarea, Skeleton } from '../../components/ui';
 import { SEO, SafeImage } from '../../components/common';
 import { useToast } from '../../components/ui/toast';
-import { Plus, Edit3, Trash2 } from 'lucide-react';
+import { Plus, Edit3, Trash2, Upload } from 'lucide-react';
 import type { Category } from '../../types';
 
 export function AdminCategoriesPage() {
@@ -224,12 +224,43 @@ export function AdminCategoriesPage() {
             rows={2}
           />
 
-          <Input
-            label="Image URL"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="https://..."
-          />
+          <div className="space-y-2">
+            <Input
+              label="Image URL or File"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://... or upload below"
+            />
+            <div>
+              <input
+                id="category-modal-file"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = () => setImageUrl(reader.result as string);
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => document.getElementById('category-modal-file')?.click()}
+                className="w-full bg-gray-100 hover:bg-gray-200 text-black py-2 px-3 text-xs uppercase tracking-wider font-medium flex items-center justify-center gap-1.5 transition-colors border border-gray-300"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload Image from Device</span>
+              </button>
+            </div>
+            {imageUrl && (
+              <div className="w-20 h-20 bg-gray-100 overflow-hidden border border-gray-200 mt-2">
+                <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <Input

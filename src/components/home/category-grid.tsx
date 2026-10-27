@@ -56,7 +56,7 @@ export function CategoryGrid() {
       {/* 3 Core Collections — Winter Formals, Summer Edit, Occasion Wear */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 lg:gap-8">
         {categories.map((category) => {
-          const imageUrl = COLLECTION_IMAGES[category.slug] ?? category.image_url;
+          const imageUrl = category.image_url || COLLECTION_IMAGES[category.slug];
           return (
             <Link
               key={category.id}

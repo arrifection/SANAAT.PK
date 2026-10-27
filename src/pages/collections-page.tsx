@@ -44,7 +44,7 @@ export function CollectionsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
           {categories?.map((cat) => {
-            const imgUrl = COLLECTION_IMAGES[cat.slug] || cat.image_url;
+            const imgUrl = cat.image_url || COLLECTION_IMAGES[cat.slug];
             return (
               <Link
                 key={cat.id}

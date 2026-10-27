@@ -4,6 +4,7 @@ import {
   useDashboardStats,
   useDashboardRecentOrders,
 } from '../../hooks/use-dashboard';
+import { useCategories, useUpdateCategory } from '../../hooks/use-categories';
 import { useDeleteOrder } from '../../hooks/use-orders';
 import { formatPrice, formatDate } from '../../utils';
 import { Skeleton } from '../../components/ui';
@@ -20,13 +21,47 @@ import {
   Trash2,
   Ruler,
   Upload,
+  ImageIcon,
 } from 'lucide-react';
+
+const DEFAULT_COLLECTION_IMAGES: Record<string, string> = {
+  'winter-formals': '/images/collections/winter-formals.webp',
+  'summer-edit': '/images/collections/summer-edit.jpg',
+  'occasion-wear': '/images/collections/occasion-wear.jpg',
+};
 
 export function AdminDashboardPage() {
   const { data: stats, isLoading: isLoadingStats } = useDashboardStats();
   const { data: recentOrders, isLoading: isLoadingOrders } = useDashboardRecentOrders(5);
+  const { data: categories } = useCategories();
+  const { mutateAsync: updateCategory } = useUpdateCategory();
   const { mutateAsync: deleteOrder } = useDeleteOrder();
   const { addToast } = useToast();
+
+  const handleCollectionPhotoUpload = (categoryId: string, categoryName: string, file: File) => {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const dataUrl = reader.result as string;
+        await updateCategory({
+          id: categoryId,
+          data: { image_url: dataUrl },
+        });
+        addToast({
+          type: 'success',
+          title: 'Photo Updated',
+          description: `Updated cover photo for "${categoryName}".`,
+        });
+      } catch {
+        addToast({
+          type: 'error',
+          title: 'Upload Failed',
+          description: 'Failed to update collection cover photo.',
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleDeleteOrder = async (orderId: string, orderNumber: string) => {
     if (window.confirm(`Are you sure you want to delete order ${orderNumber}? This action cannot be undone.`)) {
@@ -333,6 +368,90 @@ export function AdminDashboardPage() {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Homepage Collection Cover Photos (The Sanaat Edit) */}
+      <div className="bg-white p-5 sm:p-6 border border-gray-200 space-y-4">
+        <div className="flex items-start gap-3.5 border-b border-gray-100 pb-3">
+          <div className="w-10 h-10 bg-plum/10 text-plum flex items-center justify-center flex-shrink-0 rounded-sm">
+            <ImageIcon className="w-5 h-5" />
+          </div>
+          <div className="flex-1 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+            <div>
+              <h3 className="text-sm font-sans font-semibold uppercase tracking-wider text-black">
+                Collection Cover Photos (The Sanaat Edit)
+              </h3>
+              <p className="text-xs text-gray-500 mt-0.5 font-sans font-light max-w-xl">
+                Upload or change the 3 cover photos displayed on the homepage and collections showcase. Changes apply immediately to the live website.
+              </p>
+            </div>
+            <Link
+              to="/admin/categories"
+              className="text-xs font-sans uppercase tracking-widest text-plum hover:underline inline-flex items-center gap-1 font-medium"
+            >
+              <span>Manage Collections</span>
+              <span>→</span>
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+          {(categories && categories.length > 0
+            ? categories
+            : [
+                { id: 'cat-winter-formals', name: 'Winter Formals', slug: 'winter-formals', image_url: null, display_order: 1, is_active: true, description: null, created_at: '' },
+                { id: 'cat-summer-edit', name: 'Summer Edit', slug: 'summer-edit', image_url: null, display_order: 2, is_active: true, description: null, created_at: '' },
+                { id: 'cat-occasion-wear', name: 'Occasion Wear', slug: 'occasion-wear', image_url: null, display_order: 3, is_active: true, description: null, created_at: '' },
+              ]
+          ).map((cat) => {
+            const currentImg = cat.image_url || DEFAULT_COLLECTION_IMAGES[cat.slug] || '/images/story/our-story.webp';
+            const inputId = `collection-input-${cat.id}`;
+            return (
+              <div
+                key={cat.id}
+                className="p-4 border border-gray-200 bg-gray-50/50 flex flex-col justify-between space-y-3"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-serif font-medium text-sm text-black">{cat.name}</span>
+                    <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-white border border-gray-200 text-gray-600 font-sans">
+                      {cat.image_url ? 'Custom' : 'Default'}
+                    </span>
+                  </div>
+
+                  <div className="aspect-[3/4] w-full bg-gray-100 overflow-hidden relative border border-gray-200">
+                    <img
+                      src={currentImg}
+                      alt={cat.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <input
+                    id={inputId}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleCollectionPhotoUpload(cat.id, cat.name, file);
+                    }}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById(inputId)?.click()}
+                    className="w-full bg-black hover:bg-plum text-white px-3 py-2 text-xs font-sans uppercase tracking-widest font-medium transition-colors inline-flex items-center justify-center gap-1.5"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Change Photo</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
