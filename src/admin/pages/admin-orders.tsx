@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAdminOrders } from '../../hooks/use-orders';
+import { useAdminOrders, useDeleteOrder } from '../../hooks/use-orders';
 import { formatPrice, formatDate } from '../../utils';
 import { Input, Select, Skeleton } from '../../components/ui';
 import { SEO } from '../../components/common';
-import { Search, Eye, MessageCircle } from 'lucide-react';
+import { useToast } from '../../components/ui/toast';
+import { Search, Eye, Trash2, MessageCircle } from 'lucide-react';
 import type { OrderStatus, OrderType } from '../../types';
 
 export function AdminOrdersPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | ''>('');
   const [typeFilter, setTypeFilter] = useState<OrderType | ''>('');
+  const { mutateAsync: deleteOrder } = useDeleteOrder();
+  const { addToast } = useToast();
 
   const { data: result, isLoading } = useAdminOrders({
     search: search || undefined,
@@ -20,6 +23,21 @@ export function AdminOrdersPage() {
   });
 
   const orders = result?.data || [];
+
+  const handleDeleteOrder = async (orderId: string, orderNumber: string) => {
+    if (window.confirm(`Are you sure you want to delete order ${orderNumber}? This action cannot be undone.`)) {
+      try {
+        await deleteOrder(orderId);
+        addToast({
+          type: 'success',
+          title: 'Order Deleted',
+          description: `Order ${orderNumber} has been removed.`,
+        });
+      } catch {
+        addToast({ type: 'error', title: 'Error', description: 'Failed to delete order.' });
+      }
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -202,13 +220,23 @@ export function AdminOrdersPage() {
 
                     {/* Action link */}
                     <td className="py-3 px-4 text-right">
-                      <Link
-                        to={`/admin/orders/${order.id}`}
-                        className="inline-flex items-center gap-1 bg-gray-100 hover:bg-black hover:text-white text-black px-2.5 py-1 text-[11px] uppercase tracking-wider transition-colors"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>View</span>
-                      </Link>
+                      <div className="inline-flex items-center gap-1.5 justify-end">
+                        <Link
+                          to={`/admin/orders/${order.id}`}
+                          className="inline-flex items-center gap-1 bg-gray-100 hover:bg-black hover:text-white text-black px-2.5 py-1 text-[11px] uppercase tracking-wider transition-colors"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>View</span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteOrder(order.id, order.order_number)}
+                          className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                          title="Delete Order"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

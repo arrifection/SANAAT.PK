@@ -40,9 +40,9 @@ const STORAGE_KEYS = {
 function loadOrFallback<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
-    if (raw) {
+    if (raw !== null) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed as T;
       }
     }
@@ -61,12 +61,29 @@ function save<T>(key: string, data: T) {
 }
 
 export function createMockServices(): Services {
-  const categories: Category[] = loadOrFallback(STORAGE_KEYS.CATEGORIES, seedCategories);
+  let categories: Category[] = loadOrFallback(STORAGE_KEYS.CATEGORIES, seedCategories);
+  if (!categories || categories.length === 0) {
+    categories = structuredClone(seedCategories);
+  }
+
   const products: Product[] = loadOrFallback(STORAGE_KEYS.PRODUCTS, seedProducts);
   const images: ProductImage[] = loadOrFallback(STORAGE_KEYS.IMAGES, seedImages);
   const variants: ProductVariant[] = loadOrFallback(STORAGE_KEYS.VARIANTS, seedVariants);
-  const orders: Order[] = loadOrFallback(STORAGE_KEYS.ORDERS, seedOrders);
-  const orderItems: OrderItem[] = loadOrFallback(STORAGE_KEYS.ORDER_ITEMS, seedOrderItems);
+
+  // Load orders and purge any hardcoded sample orders (Amina Tariq, Zainab Qureshi, ord-1001, ord-1002)
+  const rawOrders: Order[] = loadOrFallback(STORAGE_KEYS.ORDERS, seedOrders);
+  const rawOrderItems: OrderItem[] = loadOrFallback(STORAGE_KEYS.ORDER_ITEMS, seedOrderItems);
+
+  const orders: Order[] = rawOrders.filter(
+    (o) =>
+      o.id !== 'ord-1001' &&
+      o.id !== 'ord-1002' &&
+      o.customer_name !== 'Amina Tariq' &&
+      o.customer_name !== 'Zainab Qureshi'
+  );
+  const orderItems: OrderItem[] = rawOrderItems.filter(
+    (item) => item.order_id !== 'ord-1001' && item.order_id !== 'ord-1002'
+  );
 
   // Helper to persist everything whenever any modification occurs
   const syncStorage = () => {

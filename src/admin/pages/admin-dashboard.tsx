@@ -4,6 +4,7 @@ import {
   useDashboardStats,
   useDashboardRecentOrders,
 } from '../../hooks/use-dashboard';
+import { useDeleteOrder } from '../../hooks/use-orders';
 import { formatPrice, formatDate } from '../../utils';
 import { Skeleton } from '../../components/ui';
 import { SEO } from '../../components/common';
@@ -16,6 +17,7 @@ import {
   XCircle,
   Plus,
   Eye,
+  Trash2,
   Ruler,
   Upload,
 } from 'lucide-react';
@@ -23,7 +25,23 @@ import {
 export function AdminDashboardPage() {
   const { data: stats, isLoading: isLoadingStats } = useDashboardStats();
   const { data: recentOrders, isLoading: isLoadingOrders } = useDashboardRecentOrders(5);
+  const { mutateAsync: deleteOrder } = useDeleteOrder();
   const { addToast } = useToast();
+
+  const handleDeleteOrder = async (orderId: string, orderNumber: string) => {
+    if (window.confirm(`Are you sure you want to delete order ${orderNumber}? This action cannot be undone.`)) {
+      try {
+        await deleteOrder(orderId);
+        addToast({
+          type: 'success',
+          title: 'Order Deleted',
+          description: `Order ${orderNumber} has been removed.`,
+        });
+      } catch {
+        addToast({ type: 'error', title: 'Error', description: 'Failed to delete order.' });
+      }
+    }
+  };
 
   const [topsChartUrl, setTopsChartUrl] = useState<string | null>(null);
   const [bottomsChartUrl, setBottomsChartUrl] = useState<string | null>(null);
@@ -371,11 +389,19 @@ export function AdminDashboardPage() {
                   </span>
                   <Link
                     to={`/admin/orders/${order.id}`}
-                    className="p-1 text-gray-400 hover:text-black"
+                    className="p-1 text-gray-400 hover:text-black transition-colors"
                     title="View Order"
                   >
                     <Eye className="w-4 h-4" />
                   </Link>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteOrder(order.id, order.order_number)}
+                    className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                    title="Delete Order"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}

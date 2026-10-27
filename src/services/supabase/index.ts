@@ -446,6 +446,12 @@ export function createSupabaseServices(): Services {
       if (error) throw error;
       return data as Order;
     },
+
+    async deleteOrder(id: string): Promise<void> {
+      await client.from('order_items').delete().eq('order_id', id);
+      const { error } = await client.from('orders').delete().eq('id', id);
+      if (error) throw error;
+    },
   };
 
   // ── Auth ──

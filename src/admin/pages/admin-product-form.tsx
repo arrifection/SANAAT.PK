@@ -29,6 +29,13 @@ const FABRIC_CARE_OPTIONS = ['Washable', 'Dry Clean'] as const;
 // Product types per Section 15
 const PRODUCT_TYPES = ['Top', 'Bottom', 'Set'] as const;
 
+// 3 Canonical Collections per Section 5 (Winter Formals, Summer Edit, Occasion Wear)
+const CANONICAL_COLLECTIONS = [
+  { id: 'cat-winter-formals', name: 'Winter Formals', slug: 'winter-formals' },
+  { id: 'cat-summer-edit', name: 'Summer Edit', slug: 'summer-edit' },
+  { id: 'cat-occasion-wear', name: 'Occasion Wear', slug: 'occasion-wear' },
+];
+
 export function AdminProductFormPage() {
   const { id } = useParams<{ id: string }>();
   const isEditing = Boolean(id && id !== 'new');
@@ -36,6 +43,8 @@ export function AdminProductFormPage() {
   const { addToast } = useToast();
 
   const { data: categories } = useCategories();
+  const availableCollections =
+    categories && categories.length > 0 ? categories : CANONICAL_COLLECTIONS;
   const { data: existingProduct, isLoading: isLoadingExisting } = useAdminProductById(
     isEditing ? id! : ''
   );
@@ -96,7 +105,20 @@ export function AdminProductFormPage() {
       setName(existingProduct.name);
       setSlug(existingProduct.slug);
       setPrice(existingProduct.price);
-      setCategoryId(existingProduct.category_id || '');
+
+      // Match collection by ID, slug, or name; fallback to first available collection
+      const matchedCat = availableCollections.find(
+        (c) =>
+          c.id === existingProduct.category_id ||
+          c.slug === existingProduct.category_id ||
+          c.name.toLowerCase() === existingProduct.category_id?.toLowerCase()
+      );
+      setCategoryId(
+        matchedCat
+          ? matchedCat.id
+          : (existingProduct.category_id || availableCollections[0]?.id || 'cat-winter-formals')
+      );
+
       setDescription(existingProduct.description || '');
 
       // Populate color & attributes
@@ -164,12 +186,12 @@ export function AdminProductFormPage() {
         }
         setSizes(nextSizes);
       }
-    } else if (categories && categories.length > 0 && !categoryId) {
-      setCategoryId(categories[0].id);
+    } else if (availableCollections && availableCollections.length > 0 && !categoryId) {
+      setCategoryId(availableCollections[0].id);
       // Auto populate first template
       setDescription(productDescriptionTemplates[0].generate('Noor', 'Plum'));
     }
-  }, [existingProduct, categories]);
+  }, [existingProduct, categories, availableCollections]);
 
   // Name select helper
   const handleSelectSuggestedName = (suggested: string) => {
@@ -279,13 +301,19 @@ export function AdminProductFormPage() {
     try {
       let productId = id;
 
+      const finalCategoryId =
+        categoryId ||
+        availableCollections.find((c) => c.id === existingProduct?.category_id)?.id ||
+        availableCollections[0]?.id ||
+        'cat-winter-formals';
+
       const productPayload = {
         name: name.trim(),
         slug: slug.trim() || slugify(name),
         description: description.trim(),
         price: Number(price),
         compare_at_price: null,
-        category_id: categoryId || null,
+        category_id: finalCategoryId,
         status: rawStatus as any,
         is_published: isPublished,
         is_featured: isFeatured,
@@ -534,22 +562,46 @@ export function AdminProductFormPage() {
           </div>
         </div>
 
-        {/* 4. Collection Dropdown (Section 5: Winter Formals, Summer Edit, Occasion Wear) */}
+        {/* 4. Collection Selection (Section 5: Winter Formals, Summer Edit, Occasion Wear) */}
         <div className="bg-white p-5 border border-gray-200 space-y-3">
           <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black block">
             Collection *
           </label>
-          <Select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            required
-          >
-            {categories?.map((cat) => (
-              <option key={cat.id} value={cat.id}>
+          <p className="text-[11px] text-gray-500 font-sans">
+            Select one of Sanaat's three signature collections.
+          </p>
+
+          {/* Quick Collection Selectors */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            {availableCollections.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setCategoryId(cat.id)}
+                className={`py-2.5 px-3 text-xs font-serif uppercase tracking-wider border transition-colors text-center ${
+                  categoryId === cat.id
+                    ? 'border-plum bg-plum text-white font-medium'
+                    : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300'
+                }`}
+              >
                 {cat.name}
-              </option>
+              </button>
             ))}
-          </Select>
+          </div>
+
+          <div className="pt-1">
+            <Select
+              value={categoryId || availableCollections[0]?.id || ''}
+              onChange={(e) => setCategoryId(e.target.value)}
+              required
+            >
+              {availableCollections.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </Select>
+          </div>
         </div>
 
         {/* 4.1 Product Type (Section 15: Top | Bottom | Set) */}

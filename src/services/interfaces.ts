@@ -68,6 +68,7 @@ export interface OrderService {
   getAllOrders(filters?: OrderFilters): Promise<PaginatedResult<OrderWithItems>>;
   getOrderById(id: string): Promise<OrderWithItems | null>;
   updateOrderStatus(id: string, status: OrderStatus): Promise<Order>;
+  deleteOrder(id: string): Promise<void>;
 }
 
 // ── Auth Service ──

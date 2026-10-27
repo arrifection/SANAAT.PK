@@ -199,6 +199,24 @@ export function createMockOrderService(
       onMutation?.();
       return hydrateOrder(order);
     },
+
+    async deleteOrder(id: string) {
+      await delay();
+      const idx = orders.findIndex((o) => o.id === id);
+      if (idx === -1) throw new Error(`Order not found: ${id}`);
+      orders.splice(idx, 1);
+
+      // Remove items associated with this order
+      const itemIndices = orderItems
+        .map((it, i) => (it.order_id === id ? i : -1))
+        .filter((i) => i !== -1)
+        .reverse();
+      for (const i of itemIndices) {
+        orderItems.splice(i, 1);
+      }
+
+      onMutation?.();
+    },
   };
 
   return service;

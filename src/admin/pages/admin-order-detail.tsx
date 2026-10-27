@@ -1,17 +1,19 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useAdminOrderById, useUpdateOrderStatus } from '../../hooks/use-orders';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useAdminOrderById, useUpdateOrderStatus, useDeleteOrder } from '../../hooks/use-orders';
 import { formatPrice, formatDateTime } from '../../utils';
 import { Button, Select, Skeleton } from '../../components/ui';
 import { SEO, SafeImage, EmptyState } from '../../components/common';
 import { useToast } from '../../components/ui/toast';
-import { ArrowLeft, MapPin, User, Package, MessageCircle, Phone, CreditCard } from 'lucide-react';
+import { ArrowLeft, MapPin, User, Package, MessageCircle, Phone, CreditCard, Trash2 } from 'lucide-react';
 import type { OrderStatus } from '../../types';
 
 export function AdminOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: order, isLoading } = useAdminOrderById(id || '');
   const { mutateAsync: updateStatus, isPending } = useUpdateOrderStatus();
+  const { mutateAsync: deleteOrder, isPending: isDeleting } = useDeleteOrder();
   const { addToast } = useToast();
 
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | ''>('');
@@ -50,6 +52,22 @@ export function AdminOrderDetailPage() {
       });
     } catch {
       addToast({ type: 'error', title: 'Error', description: 'Failed to update order status.' });
+    }
+  };
+
+  const handleDeleteOrder = async () => {
+    if (window.confirm(`Are you sure you want to delete order ${order.order_number}? This action cannot be undone.`)) {
+      try {
+        await deleteOrder(order.id);
+        addToast({
+          type: 'success',
+          title: 'Order Deleted',
+          description: `Order ${order.order_number} has been deleted.`,
+        });
+        navigate('/admin/orders');
+      } catch {
+        addToast({ type: 'error', title: 'Error', description: 'Failed to delete order.' });
+      }
     }
   };
 
@@ -96,31 +114,44 @@ export function AdminOrderDetailPage() {
           </div>
         </div>
 
-        {/* Status Update Control */}
-        <div className="flex items-center gap-2 bg-white p-2 border border-gray-200">
-          <Select
-            value={currentStatus}
-            onChange={(e) => setSelectedStatus(e.target.value as OrderStatus)}
-            className="text-xs h-8 py-0.5 w-40"
-          >
-            <option value="new">New</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="processing">Processing</option>
-            <option value="dispatched">Dispatched</option>
-            <option value="delivered">Delivered</option>
-            <option value="cancelled">Cancelled</option>
-          </Select>
+        {/* Status Update Control & Delete */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 bg-white p-2 border border-gray-200">
+            <Select
+              value={currentStatus}
+              onChange={(e) => setSelectedStatus(e.target.value as OrderStatus)}
+              className="text-xs h-8 py-0.5 w-40"
+            >
+              <option value="new">New</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="processing">Processing</option>
+              <option value="dispatched">Dispatched</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+            </Select>
 
-          <Button
-            size="sm"
-            variant="secondary"
-            loading={isPending}
-            disabled={!selectedStatus || selectedStatus === order.status}
-            onClick={handleStatusUpdate}
-            className="text-[11px] tracking-wider"
+            <Button
+              size="sm"
+              variant="secondary"
+              loading={isPending}
+              disabled={!selectedStatus || selectedStatus === order.status}
+              onClick={handleStatusUpdate}
+              className="text-[11px] tracking-wider"
+            >
+              UPDATE
+            </Button>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleDeleteOrder}
+            disabled={isDeleting}
+            className="inline-flex items-center gap-1.5 border border-red-200 text-red-600 hover:bg-red-50 p-2 text-xs uppercase tracking-wider font-medium transition-colors bg-white h-[42px] px-3"
+            title="Delete Order"
           >
-            UPDATE
-          </Button>
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete</span>
+          </button>
         </div>
       </div>
 
