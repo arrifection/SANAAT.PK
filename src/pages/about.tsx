@@ -1,9 +1,7 @@
 import { aboutContent } from '../content/site-content';
 import { SEO } from '../components/common';
-import { useState } from 'react';
 
 export function AboutPage() {
-  const [hasStoryImage] = useState(false); // When provided, replace with actual image file
 
   return (
     <div className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
@@ -25,27 +23,14 @@ export function AboutPage() {
         </p>
       </div>
 
-      {/* Story Visual Area (Section 7 & 8: Clean Intentional Placeholder until actual asset is provided) */}
-      <div className="relative aspect-[16/9] max-w-3xl mx-auto w-full overflow-hidden bg-neutral-50 border border-neutral-200 mb-16 flex flex-col items-center justify-center p-8 text-center shadow-xs">
-        {hasStoryImage ? (
-          <img
-            src="/images/story/our-story.jpg"
-            alt="Sanaat Story"
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="space-y-2">
-            <span className="text-[11px] font-serif uppercase tracking-[0.3em] text-plum font-semibold block">
-              OUR STORY
-            </span>
-            <p className="text-xs uppercase tracking-widest text-neutral-400 font-sans">
-              Story image coming soon
-            </p>
-            <p className="text-[11px] text-neutral-400 font-sans max-w-xs mx-auto pt-1 font-light">
-              A celebration of modest Pakistani silhouettes crafted with deliberate restraint.
-            </p>
-          </div>
-        )}
+      {/* Story Visual Area (Section 7 & 8: Authentic textile craft storytelling visual) */}
+      <div className="relative aspect-[16/9] max-w-3xl mx-auto w-full overflow-hidden bg-neutral-100 border border-neutral-200 mb-16 shadow-xs">
+        <img
+          src="/images/story/our-story.webp"
+          alt="SANAAT Artisanal Textile Weaving"
+          className="w-full h-full object-cover object-center transition-transform duration-700 ease-out hover:scale-[1.02]"
+          loading="eager"
+        />
       </div>
 
       {/* Editorial Body */}
