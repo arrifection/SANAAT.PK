@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import {
   Hero,
   CategoryGrid,
-  EditorialReel,
   BrandStatement,
 } from '../components/home';
 import { ProductCard } from '../components/product';
@@ -64,8 +63,6 @@ export function HomePage() {
         )}
       </section>
 
-      {/* E. Slow-motion editorial strip */}
-      <EditorialReel />
 
       {/* F. About Sanaat */}
       <BrandStatement />
