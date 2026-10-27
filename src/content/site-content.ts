@@ -35,7 +35,7 @@ export const aboutContent = {
     'https://images.unsplash.com/photo-1597983073512-ce20e7781138?w=1400&q=80',
   paragraphs: [
     `SANAAT was born from a simple conviction: that the rich textile heritage of Pakistan deserves a place in the modern wardrobe — not as costume, but as considered, everyday luxury. The name itself, drawn from the Urdu word for "craft," is both our identity and our promise.`,
-    `Every garment begins with cloth sourced from artisan ateliers across Pakistan — pure cotton lawns, flowing silks, and rich winter velvets selected for drape, hand-feel, and enduring integrity.`,
+    `Every garment begins with cloth sourced from artisan ateliers across Pakistan — pure cotton lawns, flowing silks, and rich khaddar textiles selected for drape, hand-feel, and enduring integrity.`,
     `Our design philosophy is deliberate restraint. Silhouettes are clean and modern; embellishments, where they appear, are purposeful — a tonal embroidered neckline, a hand-finished cuff, a single statement border. We believe ornamentation should elevate, never overwhelm.`,
     `SANAAT is for the woman who curates rather than accumulates. She values quality over quantity, story over trend. We are proud to celebrate Pakistani modest fashion on its own terms — contemporary, conscious, and deeply rooted.`,
   ],
@@ -79,7 +79,7 @@ export const editorialStrip = {
     },
     {
       url: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&q=85&auto=format&fit=crop',
-      title: 'Silk Drapery',
+      title: 'Summer Edit',
     },
     {
       url: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=800&q=85&auto=format&fit=crop',
@@ -87,7 +87,7 @@ export const editorialStrip = {
     },
     {
       url: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800&q=85&auto=format&fit=crop',
-      title: 'Graceful Silhouettes',
+      title: 'Occasion Wear',
     },
   ],
 } as const;
@@ -147,7 +147,7 @@ export const defaultSizeChart = {
 export const productDescriptionTemplates = [
   {
     id: 'formal-embroidery',
-    label: 'Formal Velvet / Raw Silk',
+    label: 'Winter Formal / Occasion',
     generate: (_name: string, color: string) =>
       `A graceful three-piece silhouette crafted in pure ${color || 'plum'}. Features delicate tonal hand-embroidery along the neckline and cuffs, paired with a flowing dupatta. Designed for effortless modesty and timeless presence.`,
   },
@@ -188,19 +188,19 @@ export const coreCollections = [
   {
     name: 'Winter Formals',
     slug: 'winter-formals',
-    description: 'Opulent velvets and rich textures tailored with refined handcraft for winter evenings.',
-    imageUrl: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=900&q=85&auto=format&fit=crop',
+    description: 'Warm, refined textures and rich tones tailored with modest handcraft for winter evenings.',
+    imageUrl: '/images/collections/winter-formals.webp',
   },
   {
     name: 'Summer Edit',
     slug: 'summer-edit',
     description: 'Airy pure cotton lawns and organza pairings designed for graceful summer modesty.',
-    imageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=900&q=85&auto=format&fit=crop',
+    imageUrl: '/images/collections/summer-edit.jpg',
   },
   {
     name: 'Occasion Wear',
     slug: 'occasion-wear',
     description: 'Heirloom-inspired festive formals featuring delicate resham and tilla handcraft.',
-    imageUrl: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=900&q=85&auto=format&fit=crop',
+    imageUrl: '/images/collections/occasion-wear.jpg',
   },
 ] as const;

@@ -34,12 +34,12 @@ export function createMockAuthService(): AuthService {
     async signIn(email: string, password: string) {
       await delay();
 
-      // Accept valid admin credentials
+      // Verify authorized owner account
       const normalizedEmail = email.trim().toLowerCase();
-      const validEmail = normalizedEmail.includes('admin') || normalizedEmail.includes('sanaat') || normalizedEmail === 'arrifection@gmail.com';
+      const validEmail = normalizedEmail === 'arrifection@gmail.com' || normalizedEmail.endsWith('@sanaat.pk');
       
-      if (!validEmail || (password !== 'admin123' && password !== 'sanaat2026' && password !== 'admin')) {
-        throw new Error('Invalid credentials. (Hint: use admin@sanaat.pk and password admin123)');
+      if (!validEmail || !password || password.length < 6) {
+        throw new Error('Invalid email or password.');
       }
 
       currentProfile = {

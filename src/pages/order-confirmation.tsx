@@ -154,6 +154,10 @@ export function OrderConfirmationPage() {
         {/* Pricing Summary */}
         <div className="p-4 sm:p-5 bg-gray-50/50 space-y-2 text-xs font-sans">
           <div className="flex justify-between text-gray-600">
+            <span>Payment Method</span>
+            <span className="font-medium text-black uppercase">{isJazzCash ? 'JazzCash' : 'Cash on Delivery'}</span>
+          </div>
+          <div className="flex justify-between text-gray-600">
             <span>Subtotal</span>
             <span className="font-medium text-black">{formatPrice(order.subtotal)}</span>
           </div>

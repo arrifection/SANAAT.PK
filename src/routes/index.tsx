@@ -40,6 +40,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'shop', element: <ShopPage /> },
+      { path: 'new-arrivals', element: <NewCollectionPage /> },
       { path: 'collections/new', element: <NewCollectionPage /> },
       { path: 'collections', element: <CollectionsPage /> },
       { path: 'collections/:slug', element: <CategoryPage /> },

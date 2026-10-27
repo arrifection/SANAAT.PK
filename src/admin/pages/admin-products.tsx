@@ -11,7 +11,7 @@ import { getDisplayStatus, getStatusBadgeClass, getStatusLabel } from '../../uti
 import { Button, Input, Select, Skeleton } from '../../components/ui';
 import { SEO, SafeImage } from '../../components/common';
 import { useToast } from '../../components/ui/toast';
-import { Plus, Search, Edit3, Trash2, Eye } from 'lucide-react';
+import { Plus, Search, Edit3, Trash2, Eye, Star } from 'lucide-react';
 import type { ProductFilters, DisplayStatus } from '../../types';
 
 export function AdminProductsPage() {
@@ -237,6 +237,7 @@ export function AdminProductsPage() {
               <th className="py-3 px-4 font-semibold">Collection</th>
               <th className="py-3 px-4 font-semibold">Price</th>
               <th className="py-3 px-4 font-semibold">Status</th>
+              <th className="py-3 px-3 font-semibold text-center">Featured</th>
               <th className="py-3 px-4 font-semibold text-center">Live</th>
               <th className="py-3 px-4 font-semibold text-right">Actions</th>
             </tr>
@@ -245,14 +246,14 @@ export function AdminProductsPage() {
             {isLoading ? (
               [1, 2, 3, 4, 5].map((i) => (
                 <tr key={i}>
-                  <td colSpan={8} className="p-4">
+                  <td colSpan={9} className="p-4">
                     <Skeleton className="h-10 w-full" />
                   </td>
                 </tr>
               ))
             ) : products.length === 0 ? (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-gray-400 uppercase tracking-widest">
+                <td colSpan={9} className="p-8 text-center text-gray-400 uppercase tracking-widest">
                   No products found matching filters
                 </td>
               </tr>
@@ -320,6 +321,32 @@ export function AdminProductsPage() {
                       <span className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-semibold ${badgeClass}`}>
                         {statusLabel}
                       </span>
+                    </td>
+
+                    {/* Featured on Homepage Toggle */}
+                    <td className="py-2 px-3 text-center">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await updateProduct({ id: product.id, data: { is_featured: !product.is_featured } });
+                            addToast({
+                              type: 'success',
+                              title: !product.is_featured ? 'Featured on Homepage' : 'Removed from Featured',
+                              description: `"${product.name}" updated.`,
+                            });
+                          } catch {
+                            addToast({ type: 'error', title: 'Error', description: 'Failed to update featured state.' });
+                          }
+                        }}
+                        className={`p-1.5 rounded transition-colors ${
+                          product.is_featured ? 'text-amber-500 hover:text-amber-600' : 'text-gray-300 hover:text-gray-500'
+                        }`}
+                        title={product.is_featured ? 'Featured on Homepage (Click to unfeature)' : 'Click to feature on Homepage'}
+                        aria-label="Toggle Featured on Homepage"
+                      >
+                        <Star className={`w-4 h-4 ${product.is_featured ? 'fill-current' : ''}`} />
+                      </button>
                     </td>
 
                     {/* Live status */}

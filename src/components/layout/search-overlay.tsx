@@ -1,16 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
-import { SafeImage } from '../common/safe-image';
 import { Spinner } from '../ui/spinner';
-
-interface SearchResult {
-  id: string;
-  name: string;
-  slug: string;
-  price: number;
-  images: string[];
-}
+import { useSearchProducts } from '../../hooks/use-products';
+import { formatPrice } from '../../utils';
 
 interface SearchOverlayProps {
   isOpen: boolean;
@@ -28,16 +21,13 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-function formatPrice(amount: number): string {
-  return `Rs. ${amount.toLocaleString('en-PK')}`;
-}
-
 function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const debouncedQuery = useDebounce(query, 300);
+
+  // Connect to real product service — fixes 0-results bug
+  const { data: results, isLoading } = useSearchProducts(debouncedQuery.trim(), 12);
 
   useEffect(() => {
     if (isOpen) {
@@ -46,33 +36,8 @@ function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
       });
     } else {
       setQuery('');
-      setResults([]);
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    if (!debouncedQuery.trim()) {
-      setResults([]);
-      return;
-    }
-
-    let cancelled = false;
-    setIsLoading(true);
-
-    // Search will be connected to product service
-    // For now, results remain empty until the service layer is built
-    const searchTimeout = setTimeout(() => {
-      if (!cancelled) {
-        setResults([]);
-        setIsLoading(false);
-      }
-    }, 200);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(searchTimeout);
-    };
-  }, [debouncedQuery]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -80,19 +45,19 @@ function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
         onClose();
       }
     },
-    [onClose]
+    [onClose],
   );
 
   if (!isOpen) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-white"
+      className="fixed inset-0 z-50 bg-white overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-label="Search"
     >
-      <div className="mx-auto max-w-3xl px-4 pt-6">
+      <div className="mx-auto max-w-3xl px-4 pt-6 pb-16">
         {/* Search input */}
         <div className="flex items-center gap-3 border-b border-gray-200 pb-4">
           <Search className="h-5 w-5 shrink-0 text-gray-400" />
@@ -102,7 +67,7 @@ function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search for products..."
+            placeholder="Search by name, color or collection..."
             className="flex-1 bg-transparent text-lg text-black placeholder:text-gray-400 focus:outline-none"
             aria-label="Search products"
           />
@@ -123,15 +88,18 @@ function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
             </div>
           )}
 
-          {!isLoading && debouncedQuery.trim() && results.length === 0 && (
+          {!isLoading && debouncedQuery.trim() && (!results || results.length === 0) && (
             <div className="py-12 text-center">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 font-sans">
                 No results found for &ldquo;{debouncedQuery}&rdquo;
+              </p>
+              <p className="text-xs text-gray-400 mt-1 font-sans">
+                Try a different name, color or collection.
               </p>
             </div>
           )}
 
-          {!isLoading && results.length > 0 && (
+          {!isLoading && results && results.length > 0 && (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
               {results.map((product) => (
                 <Link
@@ -140,14 +108,26 @@ function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                   onClick={onClose}
                   className="group"
                 >
-                  <SafeImage
-                    src={product.images[0] ?? ''}
-                    alt={product.name}
-                    aspectRatio="3/4"
-                    className="mb-2 transition-opacity group-hover:opacity-90"
-                  />
-                  <h4 className="text-sm font-medium text-black">{product.name}</h4>
-                  <p className="text-sm text-gray-500">{formatPrice(product.price)}</p>
+                  <div className="relative aspect-[3/4] overflow-hidden bg-gray-100 mb-2">
+                    {product.images[0]?.url ? (
+                      <img
+                        src={product.images[0].url}
+                        alt={product.images[0].alt_text ?? product.name}
+                        className="h-full w-full object-cover transition-opacity group-hover:opacity-90"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center bg-gray-100">
+                        <svg className="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <h4 className="text-sm font-serif text-black group-hover:text-[#6C255D] transition-colors">
+                    {product.name}
+                  </h4>
+                  <p className="text-xs text-gray-500 font-sans mt-0.5">{formatPrice(product.price)}</p>
                 </Link>
               ))}
             </div>
@@ -155,8 +135,8 @@ function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
           {!debouncedQuery.trim() && (
             <div className="py-12 text-center">
-              <p className="text-xs uppercase tracking-widest text-gray-400">
-                Start typing to search
+              <p className="text-xs uppercase tracking-widest text-gray-400 font-sans">
+                Start typing to search Sanaat
               </p>
             </div>
           )}

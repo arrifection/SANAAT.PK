@@ -62,12 +62,16 @@ export function createMockProductService(
     }
 
     if (filters.search) {
-      const query = filters.search.toLowerCase();
+      const query = filters.search.toLowerCase().trim();
       result = result.filter((p) => {
         const inName = p.name.toLowerCase().includes(query);
         const inDesc = p.description?.toLowerCase().includes(query) ?? false;
-        const inTags = p.tags.some((t) => t.toLowerCase().includes(query));
-        return inName || inDesc || inTags;
+        const inTags = p.tags?.some((t) => t.toLowerCase().includes(query)) ?? false;
+        const inColor = p.color?.toLowerCase().includes(query) ?? false;
+        const inFabric = p.fabric?.toLowerCase().includes(query) ?? false;
+        const cat = categories.find((c) => c.id === p.category_id);
+        const inCat = cat?.name.toLowerCase().includes(query) ?? false;
+        return inName || inDesc || inTags || inColor || inFabric || inCat;
       });
     }
 

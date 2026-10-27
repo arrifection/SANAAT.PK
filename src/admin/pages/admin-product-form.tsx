@@ -18,7 +18,16 @@ import {
 } from '../../content/site-content';
 import { ArrowLeft, Upload, Trash2 } from 'lucide-react';
 
-const COMMON_COLORS = ['Plum', 'Ivory', 'Sage', 'Charcoal', 'Emerald', 'Blush'];
+const COMMON_COLORS = ['Plum', 'Ivory', 'Sage', 'Charcoal', 'Emerald', 'Blush', 'White', 'Black', 'Navy', 'Dusty Rose'];
+
+// Fabric types per Section 13 (NO Velvet)
+const FABRIC_TYPES = ['Lawn', 'Khaddar', 'Cotton', 'Silk'] as const;
+
+// Fabric care per Section 14
+const FABRIC_CARE_OPTIONS = ['Washable', 'Dry Clean'] as const;
+
+// Product types per Section 15
+const PRODUCT_TYPES = ['Top', 'Bottom', 'Set'] as const;
 
 export function AdminProductFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -69,6 +78,18 @@ export function AdminProductFormPage() {
   // 8. Description
   const [description, setDescription] = useState('');
 
+  // 9. Fabric Type (Section 13: Lawn | Khaddar | Cotton | Silk — no Velvet)
+  const [fabricType, setFabricType] = useState<string>('Lawn');
+
+  // 10. Fabric Care (Section 14: Washable | Dry Clean)
+  const [fabricCare, setFabricCare] = useState<string>('Washable');
+
+  // 11. Product Type (Section 15: Top | Bottom | Set — determines size chart)
+  const [productType, setProductType] = useState<string>('Set');
+
+  // 12. Featured on Homepage (Section 24)
+  const [isFeatured, setIsFeatured] = useState<boolean>(false);
+
   // Populate data when editing
   useEffect(() => {
     if (existingProduct) {
@@ -78,9 +99,36 @@ export function AdminProductFormPage() {
       setCategoryId(existingProduct.category_id || '');
       setDescription(existingProduct.description || '');
 
-      // Infer color
-      const foundColor = existingProduct.tags?.find((t) => COMMON_COLORS.includes(t)) || 'Plum';
-      setColor(foundColor);
+      // Populate color & attributes
+      if (existingProduct.color) {
+        setColor(existingProduct.color);
+      } else {
+        const foundColor = existingProduct.tags?.find((t) => COMMON_COLORS.includes(t)) || 'Plum';
+        setColor(foundColor);
+      }
+
+      if (existingProduct.is_featured !== undefined) {
+        setIsFeatured(Boolean(existingProduct.is_featured));
+      }
+
+      if (existingProduct.product_type) {
+        setProductType(existingProduct.product_type);
+      }
+
+      if (existingProduct.fabric) {
+        const foundFabric = FABRIC_TYPES.find((f) =>
+          existingProduct.fabric?.toLowerCase().includes(f.toLowerCase())
+        );
+        if (foundFabric) setFabricType(foundFabric);
+        else setFabricType(existingProduct.fabric);
+      }
+
+      if (existingProduct.fabric_care) {
+        setFabricCare(existingProduct.fabric_care);
+      } else if (existingProduct.care_instructions) {
+        if (existingProduct.care_instructions.toLowerCase().includes('dry clean')) setFabricCare('Dry Clean');
+        else setFabricCare('Washable');
+      }
 
       // Infer status
       if (existingProduct.status === 'draft') setStatusType('draft');
@@ -240,15 +288,18 @@ export function AdminProductFormPage() {
         category_id: categoryId || null,
         status: rawStatus as any,
         is_published: isPublished,
-        is_featured: false,
+        is_featured: isFeatured,
         is_preorder: isPreorder,
         preorder_closes_at: null,
         estimated_dispatch_date: null,
         preorder_limit: isPreorder ? 30 : null,
-        tags: [color, isPreorder ? 'Pre-Order' : 'Available'],
-        fabric: `${color} Pure Silk / Velvet / Lawn`,
-        care_instructions: 'Dry clean recommended.',
-        details: 'Graceful three-piece ensemble tailored with artisanal finishings.',
+        tags: [color, fabricType, isPreorder ? 'Pre-Order' : 'Available'],
+        fabric: fabricType,
+        fabric_care: fabricCare,
+        product_type: productType,
+        color: color,
+        care_instructions: fabricCare === 'Dry Clean' ? 'Dry clean only.' : 'Washable (gentle cycle).',
+        details: 'Graceful modest silhouette tailored with fine finishings.',
         display_order: 0,
         low_stock_threshold: 3,
       };
@@ -483,7 +534,7 @@ export function AdminProductFormPage() {
           </div>
         </div>
 
-        {/* 4. Collection Dropdown (Section 17: Winter Formals, Summer Edit, Occasion Wear) */}
+        {/* 4. Collection Dropdown (Section 5: Winter Formals, Summer Edit, Occasion Wear) */}
         <div className="bg-white p-5 border border-gray-200 space-y-3">
           <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black block">
             Collection *
@@ -499,6 +550,107 @@ export function AdminProductFormPage() {
               </option>
             ))}
           </Select>
+        </div>
+
+        {/* 4.1 Product Type (Section 15: Top | Bottom | Set) */}
+        <div className="bg-white p-5 border border-gray-200 space-y-3">
+          <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black block">
+            Product Type *
+          </label>
+          <p className="text-[11px] text-gray-500 font-sans">
+            Determines whether customer views the Tops chart, Bottoms chart, or both.
+          </p>
+          <div className="grid grid-cols-3 gap-3">
+            {PRODUCT_TYPES.map((pt) => (
+              <button
+                key={pt}
+                type="button"
+                onClick={() => setProductType(pt)}
+                className={`py-2.5 px-3 text-xs font-serif uppercase tracking-wider border transition-colors ${
+                  productType === pt
+                    ? 'border-plum bg-plum text-white font-medium'
+                    : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {pt}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 4.2 Fabric Selector (Section 13: Lawn | Khaddar | Cotton | Silk — strictly NO Velvet) */}
+        <div className="bg-white p-5 border border-gray-200 space-y-3">
+          <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black block">
+            Fabric Type *
+          </label>
+          <p className="text-[11px] text-gray-500 font-sans">
+            Select one fabric type. Customer product page will display &quot;Fabric: {fabricType}&quot;.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {FABRIC_TYPES.map((fab) => (
+              <button
+                key={fab}
+                type="button"
+                onClick={() => setFabricType(fab)}
+                className={`py-2.5 px-3 text-xs font-serif uppercase tracking-wider border transition-colors ${
+                  fabricType === fab
+                    ? 'border-plum bg-plum text-white font-medium'
+                    : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {fab}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 4.3 Fabric Care Selector (Section 14: Washable | Dry Clean) */}
+        <div className="bg-white p-5 border border-gray-200 space-y-3">
+          <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black block">
+            Fabric Care *
+          </label>
+          <p className="text-[11px] text-gray-500 font-sans">
+            Customer product page will display &quot;Fabric Care: {fabricCare}&quot;.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {FABRIC_CARE_OPTIONS.map((care) => (
+              <button
+                key={care}
+                type="button"
+                onClick={() => setFabricCare(care)}
+                className={`py-2.5 px-3 text-xs font-serif uppercase tracking-wider border transition-colors ${
+                  fabricCare === care
+                    ? 'border-plum bg-plum text-white font-medium'
+                    : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {care}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 4.4 Featured on Homepage (Section 24: Admin Control) */}
+        <div className="bg-white p-5 border border-gray-200 flex items-center justify-between">
+          <div>
+            <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black block">
+              Featured on Homepage
+            </label>
+            <p className="text-[11px] text-gray-500 font-sans mt-0.5">
+              Display this dress in the curated homepage Featured Dresses section.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsFeatured(!isFeatured)}
+            className={`px-4 py-2 text-xs uppercase tracking-wider font-semibold border transition-colors ${
+              isFeatured
+                ? 'bg-plum text-white border-plum'
+                : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
+            }`}
+          >
+            {isFeatured ? '★ FEATURED (ON)' : 'NOT FEATURED (OFF)'}
+          </button>
         </div>
 
         {/* 5. Sizes & Stock (Default: S, M, L, XL per Section 17) */}

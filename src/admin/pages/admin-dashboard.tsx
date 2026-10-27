@@ -18,7 +18,6 @@ import {
   Eye,
   Ruler,
   Upload,
-  Check,
 } from 'lucide-react';
 
 export function AdminDashboardPage() {
@@ -26,19 +25,25 @@ export function AdminDashboardPage() {
   const { data: recentOrders, isLoading: isLoadingOrders } = useDashboardRecentOrders(5);
   const { addToast } = useToast();
 
-  const [sizeChartUrl, setSizeChartUrl] = useState<string | null>(null);
-  const sizeChartInputRef = useRef<HTMLInputElement>(null);
+  const [topsChartUrl, setTopsChartUrl] = useState<string | null>(null);
+  const [bottomsChartUrl, setBottomsChartUrl] = useState<string | null>(null);
+  const topsInputRef = useRef<HTMLInputElement>(null);
+  const bottomsInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('sanaat_size_chart_image');
-      setSizeChartUrl(saved);
+      const savedTops = localStorage.getItem('sanaat_tops_size_chart') || localStorage.getItem('sanaat_size_chart_image');
+      setTopsChartUrl(savedTops);
+
+      const savedBottoms = localStorage.getItem('sanaat_bottoms_size_chart') || localStorage.getItem('sanaat_size_chart_image');
+      setBottomsChartUrl(savedBottoms);
     } catch {
-      setSizeChartUrl(null);
+      setTopsChartUrl(null);
+      setBottomsChartUrl(null);
     }
   }, []);
 
-  const handleSizeChartUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTopsUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -46,36 +51,48 @@ export function AdminDashboardPage() {
     reader.onload = () => {
       const result = reader.result as string;
       try {
-        localStorage.setItem('sanaat_size_chart_image', result);
-        setSizeChartUrl(result);
+        localStorage.setItem('sanaat_tops_size_chart', result);
+        setTopsChartUrl(result);
         addToast({
           type: 'success',
-          title: 'Size Chart Updated',
-          description: 'Your official size chart image is now active across all product pages.',
+          title: 'Tops Size Chart Updated',
+          description: 'Official Tops size chart is now active.',
         });
       } catch {
         addToast({
           type: 'error',
           title: 'Storage Error',
-          description: 'Failed to save size chart image. Try a slightly smaller image file.',
+          description: 'Failed to save tops size chart.',
         });
       }
     };
     reader.readAsDataURL(file);
   };
 
-  const handleResetSizeChart = () => {
-    try {
-      localStorage.removeItem('sanaat_size_chart_image');
-      setSizeChartUrl(null);
-      addToast({
-        type: 'info',
-        title: 'Reset to Standard',
-        description: 'Now using Sanaat standard typography size chart.',
-      });
-    } catch {
-      // ignore
-    }
+  const handleBottomsUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      try {
+        localStorage.setItem('sanaat_bottoms_size_chart', result);
+        setBottomsChartUrl(result);
+        addToast({
+          type: 'success',
+          title: 'Bottoms Size Chart Updated',
+          description: 'Official Bottoms size chart is now active.',
+        });
+      } catch {
+        addToast({
+          type: 'error',
+          title: 'Storage Error',
+          description: 'Failed to save bottoms size chart.',
+        });
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -218,60 +235,86 @@ export function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Global Size Chart Management Card (Section 7) */}
-      <div className="bg-white p-5 sm:p-6 border border-gray-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-start gap-3.5">
+      {/* Global Size Chart Management Card (Section 17: Tops & Bottoms Central Place) */}
+      <div className="bg-white p-5 sm:p-6 border border-gray-200 space-y-4">
+        <div className="flex items-start gap-3.5 border-b border-gray-100 pb-3">
           <div className="w-10 h-10 bg-plum/10 text-plum flex items-center justify-center flex-shrink-0 rounded-sm">
             <Ruler className="w-5 h-5" />
           </div>
           <div>
             <h3 className="text-sm font-sans font-semibold uppercase tracking-wider text-black">
-              Storewide Size Chart
+              Central Size Chart System
             </h3>
-            <p className="text-xs text-gray-500 mt-0.5 font-sans font-light max-w-lg">
-              Upload your official Sanaat size chart once. It is automatically presented in a lightbox modal on every product page when customers click &ldquo;SEE SIZE CHART&rdquo;.
+            <p className="text-xs text-gray-500 mt-0.5 font-sans font-light max-w-xl">
+              Upload your official Tops (Shirt) and Bottoms (Shalwar) charts once here. They automatically display on customer product pages based on the product type (Top, Bottom, or Set).
             </p>
-            <div className="mt-2 flex items-center gap-2 text-[11px] font-sans">
-              <span className="text-gray-400">Current status:</span>
-              {sizeChartUrl ? (
-                <span className="text-emerald-700 font-medium inline-flex items-center gap-1">
-                  <Check className="w-3.5 h-3.5" />
-                  Custom Size Chart Active
-                </span>
-              ) : (
-                <span className="text-plum font-medium">
-                  Standard S/M/L/XL Measurement Grid Active
-                </span>
-              )}
-            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
-          <input
-            ref={sizeChartInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleSizeChartUpload}
-            className="hidden"
-          />
-          <button
-            type="button"
-            onClick={() => sizeChartInputRef.current?.click()}
-            className="bg-black hover:bg-plum text-white px-4 py-2 text-xs font-sans uppercase tracking-widest font-medium transition-colors inline-flex items-center gap-1.5"
-          >
-            <Upload className="w-3.5 h-3.5" />
-            <span>{sizeChartUrl ? 'Replace Chart' : 'Upload Size Chart'}</span>
-          </button>
-          {sizeChartUrl && (
-            <button
-              type="button"
-              onClick={handleResetSizeChart}
-              className="border border-gray-300 hover:bg-gray-100 text-black px-3 py-2 text-xs font-sans uppercase tracking-widest transition-colors"
-            >
-              Reset
-            </button>
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+          {/* Tops Size Chart */}
+          <div className="p-4 border border-gray-200 bg-gray-50/50 flex flex-col justify-between space-y-3">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="font-serif font-medium text-sm text-black">Tops Size Chart</span>
+                <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-white border border-gray-200 text-gray-600 font-sans">
+                  {topsChartUrl ? 'Active' : 'Default / Static'}
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-500 font-sans mt-1">
+                Used for Tops and Sets.
+              </p>
+            </div>
+            <div>
+              <input
+                ref={topsInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleTopsUpload}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => topsInputRef.current?.click()}
+                className="w-full bg-black hover:bg-plum text-white px-4 py-2 text-xs font-sans uppercase tracking-widest font-medium transition-colors inline-flex items-center justify-center gap-1.5"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload Tops Chart</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Bottoms Size Chart */}
+          <div className="p-4 border border-gray-200 bg-gray-50/50 flex flex-col justify-between space-y-3">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="font-serif font-medium text-sm text-black">Bottoms Size Chart</span>
+                <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-white border border-gray-200 text-gray-600 font-sans">
+                  {bottomsChartUrl ? 'Active' : 'Default / Static'}
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-500 font-sans mt-1">
+                Used for Bottoms and Sets.
+              </p>
+            </div>
+            <div>
+              <input
+                ref={bottomsInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleBottomsUpload}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => bottomsInputRef.current?.click()}
+                className="w-full bg-black hover:bg-plum text-white px-4 py-2 text-xs font-sans uppercase tracking-widest font-medium transition-colors inline-flex items-center justify-center gap-1.5"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload Bottoms Chart</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

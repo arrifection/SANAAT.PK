@@ -192,9 +192,9 @@ export function ContactPage() {
                 <Clock className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-black font-sans">Location & Hours</h3>
+                <h3 className="text-sm font-semibold text-black font-sans">Hours</h3>
                 <p className="text-xs text-gray-600 mt-0.5 font-light font-sans">
-                  Lahore, Pakistan · Mon — Sat, 11 AM – 8 PM (PKT)
+                  Mon — Sat, 11 AM – 8 PM (PKT) · Online orders accepted 24/7
                 </p>
               </div>
             </div>

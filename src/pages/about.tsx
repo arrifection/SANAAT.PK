@@ -1,67 +1,84 @@
 import { aboutContent } from '../content/site-content';
-import { SEO, SafeImage } from '../components/common';
+import { SEO } from '../components/common';
+import { useState } from 'react';
 
 export function AboutPage() {
+  const [hasStoryImage] = useState(false); // When provided, replace with actual image file
+
   return (
     <div className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
       <SEO
         title="Our Story | SANAAT"
-        description="Learn about SANAAT — our commitment to modest Pakistani fashion, artisan textile preservation, and mindful luxury."
+        description="Sanaat — A celebration of thoughtful design and modest elegance. Pakistani silhouettes designed to feel timeless, graceful and distinctly your own."
       />
 
       {/* Header */}
-      <div className="text-center max-w-2xl mx-auto mb-16">
+      <div className="text-center max-w-2xl mx-auto mb-14">
         <span className="text-[11px] uppercase tracking-[0.3em] text-plum font-sans font-medium">
           Heritage & Vision
         </span>
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif tracking-wide text-black mt-2 mb-4">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif tracking-wide text-black mt-2 mb-4 font-normal">
           {aboutContent.pageTitle}
         </h1>
-        <p className="text-sm uppercase tracking-widest text-gray-500 font-sans">
-          FASHION WITH MODESTY · HANDCRAFTED IN PAKISTAN
+        <p className="text-xs sm:text-sm uppercase tracking-widest text-gray-500 font-sans">
+          FASHION WITH MODESTY · PAKISTANI FASHION LABEL
         </p>
       </div>
 
-      {/* Hero Image */}
-      <div className="relative aspect-[16/9] w-full overflow-hidden bg-gray-100 mb-16 shadow-sm">
-        <SafeImage
-          src={aboutContent.heroImageUrl}
-          alt="SANAAT Artisans & Weavers"
-          className="w-full h-full object-cover"
-        />
+      {/* Story Visual Area (Section 7 & 8: Clean Intentional Placeholder until actual asset is provided) */}
+      <div className="relative aspect-[16/9] max-w-3xl mx-auto w-full overflow-hidden bg-neutral-50 border border-neutral-200 mb-16 flex flex-col items-center justify-center p-8 text-center shadow-xs">
+        {hasStoryImage ? (
+          <img
+            src="/images/story/our-story.jpg"
+            alt="Sanaat Story"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="space-y-2">
+            <span className="text-[11px] font-serif uppercase tracking-[0.3em] text-plum font-semibold block">
+              OUR STORY
+            </span>
+            <p className="text-xs uppercase tracking-widest text-neutral-400 font-sans">
+              Story image coming soon
+            </p>
+            <p className="text-[11px] text-neutral-400 font-sans max-w-xs mx-auto pt-1 font-light">
+              A celebration of modest Pakistani silhouettes crafted with deliberate restraint.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Editorial Body */}
-      <div className="max-w-3xl mx-auto space-y-6 text-base sm:text-lg font-serif text-gray-800 leading-relaxed">
+      <div className="max-w-2xl mx-auto space-y-6 text-base sm:text-lg font-serif text-gray-800 leading-relaxed">
         {aboutContent.paragraphs.map((p: string, idx: number) => (
-          <p key={idx} className={idx === 0 ? 'text-xl sm:text-2xl font-light italic text-black' : ''}>
+          <p key={idx} className={idx === 0 ? 'text-lg sm:text-xl font-light italic text-black' : ''}>
             {p}
           </p>
         ))}
       </div>
 
       {/* Mission Quote */}
-      <div className="my-20 p-8 sm:p-12 bg-gray-50 border-l-2 border-plum max-w-3xl mx-auto">
+      <div className="my-16 p-8 sm:p-12 bg-neutral-50 border-l-2 border-plum max-w-2xl mx-auto">
         <h2 className="text-xs uppercase tracking-[0.25em] font-sans font-semibold text-plum mb-3">
           {aboutContent.mission.heading}
         </h2>
-        <p className="text-lg sm:text-xl font-serif text-black italic leading-relaxed">
-          "{aboutContent.mission.body}"
+        <p className="text-lg sm:text-xl font-serif text-black italic leading-relaxed font-normal">
+          &ldquo;{aboutContent.mission.body}&rdquo;
         </p>
       </div>
 
       {/* Core Values */}
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-serif text-center text-black mb-12">
+        <h2 className="text-2xl sm:text-3xl font-serif text-center text-black mb-10 font-normal">
           Our Guiding Principles
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           {aboutContent.values.map((v: { heading: string; body: string }, i: number) => (
             <div key={i} className="p-6 border border-gray-100 bg-white space-y-3">
               <span className="text-xs uppercase tracking-widest text-gray-400 font-mono">
                 0{i + 1}
               </span>
-              <h3 className="text-xl font-serif text-black">{v.heading}</h3>
+              <h3 className="text-xl font-serif text-black font-normal">{v.heading}</h3>
               <p className="text-xs sm:text-sm text-gray-600 font-light leading-relaxed">
                 {v.body}
               </p>

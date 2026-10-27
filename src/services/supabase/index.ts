@@ -159,13 +159,14 @@ export function createSupabaseServices(): Services {
       return (data as any) || [];
     },
 
-    async searchProducts(queryText: string, limit = 8): Promise<ProductWithRelations[]> {
+    async searchProducts(queryText: string, limit = 12): Promise<ProductWithRelations[]> {
+      const q = queryText.trim();
       const { data, error } = await client
         .from('products')
         .select('*, category:categories(*), images:product_images(*), variants:product_variants(*)')
         .eq('is_published', true)
         .eq('status', 'active')
-        .ilike('name', `%${queryText}%`)
+        .or(`name.ilike.%${q}%,description.ilike.%${q}%,fabric.ilike.%${q}%,color.ilike.%${q}%`)
         .limit(limit);
 
       if (error) throw error;

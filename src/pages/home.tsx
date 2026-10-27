@@ -73,23 +73,23 @@ export function HomePage() {
       {/* G. Collections (Winter Formals, Summer Edit, Occasion Wear) */}
       <CategoryGrid />
 
-      {/* H. Final CTA */}
-      <section className="py-16 sm:py-24 bg-black text-white text-center px-4 sm:px-6">
+      {/* H. Final CTA — Sanaat Plum brand box */}
+      <section className="py-16 sm:py-24 bg-[#6C255D] text-white text-center px-4 sm:px-6">
         <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
-          <span className="text-[10px] sm:text-[11px] font-sans font-medium uppercase tracking-[0.35em] text-plum">
-            SANAAT STUDIO
+          <span className="text-[10px] sm:text-[11px] font-sans font-medium uppercase tracking-[0.35em] text-white/70">
+            SANAAT · PAKISTAN
           </span>
           <h2 className="text-2xl sm:text-4xl font-serif tracking-wide leading-tight font-normal">
-            Graceful Silhouettes for Every Moment
+            Pakistani Fashion, Made Modest.
           </h2>
           <p className="text-xs sm:text-sm text-white/80 font-sans font-light max-w-md mx-auto leading-relaxed">
-            Discover pieces created to feel timeless, graceful and distinctly your own. Available nationwide across Pakistan.
+            Sanaat is a quiet celebration of thoughtful design — for the woman who values quality, modesty, and enduring elegance. Available nationwide across Pakistan.
           </p>
           <div className="pt-2">
             <Link to="/shop">
               <button
                 type="button"
-                className="bg-white hover:bg-gray-100 text-black px-8 py-3.5 text-xs font-sans uppercase tracking-[0.2em] font-medium transition-colors"
+                className="bg-white hover:bg-gray-100 text-[#6C255D] px-8 py-3.5 text-xs font-sans uppercase tracking-[0.2em] font-semibold transition-colors"
               >
                 EXPLORE ALL PIECES
               </button>

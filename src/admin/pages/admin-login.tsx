@@ -7,8 +7,8 @@ import { SEO } from '../../components/common';
 import { Lock, Info } from 'lucide-react';
 
 export function AdminLoginPage() {
-  const [email, setEmail] = useState('admin@sanaat.pk');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuth();
@@ -85,17 +85,10 @@ export function AdminLoginPage() {
         <div className="bg-gray-50 border border-gray-200 p-3.5 text-xs text-gray-600 space-y-1">
           <div className="flex items-center gap-1.5 font-medium text-black">
             <Info className="w-3.5 h-3.5 text-plum" />
-            <span>Owner Portal Access</span>
+            <span>Authorized Owner Access</span>
           </div>
           <p className="text-[11px] text-gray-500 font-sans">
-            Default credentials:{' '}
-            <code className="bg-white px-1 py-0.5 border border-gray-200 font-mono text-black">
-              admin@sanaat.pk
-            </code>{' '}
-            / password{' '}
-            <code className="bg-white px-1 py-0.5 border border-gray-200 font-mono text-black">
-              admin123
-            </code>
+            Please sign in with your registered Sanaat owner credentials.
           </p>
         </div>
 

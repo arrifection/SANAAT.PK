@@ -10,6 +10,15 @@ export type OrderType = 'standard' | 'preorder';
 export type PaymentMethod = 'cod' | 'jazzcash' | 'bank_transfer' | 'online';
 export type PaymentStatus = 'pending' | 'paid' | 'refunded';
 
+// ── Fabric Types (Section 13) ──
+export type FabricType = 'Lawn' | 'Khaddar' | 'Cotton' | 'Silk';
+
+// ── Fabric Care (Section 14) ──
+export type FabricCare = 'Washable' | 'Dry Clean';
+
+// ── Product Type (Section 15 — determines size chart) ──
+export type ProductType = 'Top' | 'Bottom' | 'Set';
+
 // ── Derived display status (computed from data, not stored) ──
 export type DisplayStatus = 'draft' | 'preorder' | 'available' | 'low_stock' | 'out_of_stock' | 'archived';
 
@@ -47,8 +56,11 @@ export interface Product {
   estimated_dispatch_date: string | null;
   preorder_limit: number | null;
   tags: string[];
-  fabric: string | null;
-  care_instructions: string | null;
+  fabric: string | null;        // Actual fabric type: Lawn | Khaddar | Cotton | Silk
+  fabric_care: string | null;   // Fabric care: Washable | Dry Clean
+  product_type: string | null;  // Top | Bottom | Set (determines size chart)
+  color: string | null;         // Explicit color field
+  care_instructions: string | null; // Legacy / additional care notes
   details: string | null;
   display_order: number;
   low_stock_threshold: number;

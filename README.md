@@ -21,7 +21,7 @@ http://localhost:5173
 
 # 4. Access Admin Dashboard
 http://localhost:5173/admin
-# (Demo credentials: admin@sanaat.pk / admin123)
+# (Sign in using the configured store owner admin credentials)
 ```
 
 ---

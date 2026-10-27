@@ -189,10 +189,24 @@ export function ProductDetailPage() {
                 )}
               </div>
 
-              {/* Color attribute */}
-              <div className="mt-3 flex items-center gap-2 text-xs font-sans text-gray-600">
-                <span className="text-gray-400 uppercase tracking-wider">Color:</span>
-                <span className="font-medium text-black">{colorTag}</span>
+              {/* Product Specifications: Color, Fabric, Fabric Care (Section 13, 14, 22) */}
+              <div className="mt-4 pt-3 border-t border-gray-100 space-y-1.5 text-xs font-sans">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400 uppercase tracking-wider text-[11px] w-24">Color:</span>
+                  <span className="font-medium text-black">{product.color || colorTag}</span>
+                </div>
+                {product.fabric && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-400 uppercase tracking-wider text-[11px] w-24">Fabric:</span>
+                    <span className="font-medium text-black">{product.fabric}</span>
+                  </div>
+                )}
+                {(product.fabric_care || product.care_instructions) && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-400 uppercase tracking-wider text-[11px] w-24">Fabric Care:</span>
+                    <span className="font-medium text-black">{product.fabric_care || product.care_instructions}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -380,10 +394,11 @@ export function ProductDetailPage() {
         </section>
       )}
 
-      {/* Global Size Chart Modal per Section 7 */}
+      {/* Global Size Chart Modal per Section 7 & 17 */}
       <SizeChartModal
         isOpen={sizeChartOpen}
         onClose={() => setSizeChartOpen(false)}
+        productType={product.product_type}
       />
     </div>
   );
