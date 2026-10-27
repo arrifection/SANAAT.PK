@@ -8,13 +8,13 @@ export function CategoryGrid() {
 
   if (isLoading) {
     return (
-      <section className="py-16 px-4 max-w-7xl mx-auto">
+      <section className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center mb-10">
-          <Skeleton className="h-8 w-48 mx-auto mb-2" />
-          <Skeleton className="h-4 w-72 mx-auto" />
+          <Skeleton className="h-6 w-36 mx-auto mb-2" />
+          <Skeleton className="h-4 w-60 mx-auto" />
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="aspect-[3/4] w-full" />
           ))}
         </div>
@@ -25,17 +25,18 @@ export function CategoryGrid() {
   if (!categories || categories.length === 0) return null;
 
   return (
-    <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      <div className="text-center mb-12">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif tracking-wide text-black mb-2">
-          Shop by Category
+    <section className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div className="text-center mb-10 sm:mb-12">
+        <span className="text-[10px] sm:text-[11px] font-sans font-medium uppercase tracking-[0.3em] text-plum block mb-1">
+          Curated Silhouettes
+        </span>
+        <h2 className="text-2xl sm:text-3xl font-serif tracking-wide text-black">
+          The Collections
         </h2>
-        <p className="text-xs sm:text-sm uppercase tracking-widest text-gray-500 font-sans">
-          Curated collections crafted for every occasion
-        </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      {/* 3 Core Collections per Section 3.G & 4 */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 lg:gap-8">
         {categories.map((category) => (
           <Link
             key={category.id}
@@ -47,13 +48,16 @@ export function CategoryGrid() {
               alt={category.name}
               className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent transition-opacity group-hover:from-black/80" />
-            <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6 text-center text-white">
-              <h3 className="text-base sm:text-lg md:text-xl font-serif tracking-wider mb-1">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent transition-opacity group-hover:from-black/85" />
+            <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6 text-center text-white">
+              <h3 className="text-xl sm:text-2xl font-serif tracking-wider mb-1.5">
                 {category.name}
               </h3>
-              <span className="text-[10px] sm:text-xs uppercase tracking-widest text-white/80 group-hover:text-white transition-colors">
-                Explore →
+              <p className="text-[11px] font-sans text-white/80 line-clamp-1 mb-3 font-light">
+                {category.description}
+              </p>
+              <span className="text-[10px] sm:text-[11px] font-sans uppercase tracking-[0.2em] text-white border-b border-white/60 pb-0.5 group-hover:border-white transition-colors">
+                Explore Collection →
               </span>
             </div>
           </Link>

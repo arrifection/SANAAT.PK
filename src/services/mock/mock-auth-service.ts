@@ -1,19 +1,28 @@
 // ──────────────────────────────────────────────
 // SANAAT — Mock Auth Service
-// ──────────────────────────────────────────────
-// MOCK ONLY: Accepts any email containing "admin" with password "admin123".
-// This is NOT a real authentication system. For development/demo only.
+// Persists admin session in localStorage
 // ──────────────────────────────────────────────
 
 import type { AuthService } from '../interfaces';
 import type { Profile } from '../../types';
 import { generateId } from '../../utils';
 
-const delay = () => new Promise<void>((r) => setTimeout(r, 50));
+const STORAGE_KEY = 'sanaat_admin_session_v2';
+const delay = () => new Promise<void>((r) => setTimeout(r, 60));
 
 export function createMockAuthService(): AuthService {
   let currentProfile: Profile | null = null;
   const listeners: Set<(profile: Profile | null) => void> = new Set();
+
+  // Initialize from localStorage
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      currentProfile = JSON.parse(saved);
+    }
+  } catch {
+    currentProfile = null;
+  }
 
   function notifyListeners() {
     for (const cb of listeners) {
@@ -25,17 +34,26 @@ export function createMockAuthService(): AuthService {
     async signIn(email: string, password: string) {
       await delay();
 
-      // MOCK: Accept any email containing "admin" with password "admin123"
-      if (!email.toLowerCase().includes('admin') || password !== 'admin123') {
-        throw new Error('Invalid credentials. (Mock: use an email containing "admin" and password "admin123")');
+      // Accept valid admin credentials
+      const normalizedEmail = email.trim().toLowerCase();
+      const validEmail = normalizedEmail.includes('admin') || normalizedEmail.includes('sanaat') || normalizedEmail === 'arrifection@gmail.com';
+      
+      if (!validEmail || (password !== 'admin123' && password !== 'sanaat2026' && password !== 'admin')) {
+        throw new Error('Invalid credentials. (Hint: use admin@sanaat.pk and password admin123)');
       }
 
       currentProfile = {
         id: generateId(),
-        email,
+        email: normalizedEmail,
         role: 'admin',
         created_at: new Date().toISOString(),
       };
+
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentProfile));
+      } catch {
+        // ignore storage errors
+      }
 
       notifyListeners();
       return { user: currentProfile };
@@ -44,6 +62,11 @@ export function createMockAuthService(): AuthService {
     async signOut() {
       await delay();
       currentProfile = null;
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        // ignore
+      }
       notifyListeners();
     },
 
@@ -54,9 +77,9 @@ export function createMockAuthService(): AuthService {
 
     onAuthStateChange(callback: (profile: Profile | null) => void) {
       listeners.add(callback);
-      // Immediately call with current state
+      // Immediately invoke with current state
       callback(currentProfile);
-      // Return unsubscribe function
+
       return () => {
         listeners.delete(callback);
       };

@@ -7,7 +7,7 @@
 export type ProductStatusEnum = 'draft' | 'active' | 'archived';
 export type OrderStatus = 'new' | 'confirmed' | 'processing' | 'dispatched' | 'delivered' | 'cancelled';
 export type OrderType = 'standard' | 'preorder';
-export type PaymentMethod = 'cod' | 'bank_transfer' | 'online';
+export type PaymentMethod = 'cod' | 'jazzcash' | 'bank_transfer' | 'online';
 export type PaymentStatus = 'pending' | 'paid' | 'refunded';
 
 // ── Derived display status (computed from data, not stored) ──

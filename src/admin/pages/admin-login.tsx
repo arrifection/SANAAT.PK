@@ -4,12 +4,11 @@ import { useAuth } from '../../hooks/use-auth';
 import { Button, Input } from '../../components/ui';
 import { Logo } from '../../components/layout';
 import { SEO } from '../../components/common';
-import { env } from '../../lib/env';
 import { Lock, Info } from 'lucide-react';
 
 export function AdminLoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('admin@sanaat.pk');
+  const [password, setPassword] = useState('admin123');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuth();
@@ -43,7 +42,7 @@ export function AdminLoginPage() {
             <Lock className="w-3.5 h-3.5" />
             <span>Storefront Portal</span>
           </div>
-          <h1 className="text-2xl font-serif text-black pt-1">Admin Sign In</h1>
+          <h1 className="text-2xl font-serif text-black pt-1">Owner Sign In</h1>
         </div>
 
         {error && (
@@ -83,26 +82,22 @@ export function AdminLoginPage() {
           </Button>
         </form>
 
-        {/* Demo Mode Helper (Only visible when Supabase credentials are not configured) */}
-        {!env.isSupabaseConfigured && (
-          <div className="bg-gray-50 border border-gray-200 p-3.5 text-xs text-gray-600 space-y-1">
-            <div className="flex items-center gap-1.5 font-medium text-black">
-              <Info className="w-3.5 h-3.5 text-plum" />
-              <span>Local Fallback Demo Mode</span>
-            </div>
-            <p className="text-[11px] text-gray-500">
-              Any email with &ldquo;admin&rdquo; (e.g.{' '}
-              <code className="bg-white px-1 py-0.5 border border-gray-200 font-mono text-black">
-                admin@sanaat.pk
-              </code>
-              ) and password{' '}
-              <code className="bg-white px-1 py-0.5 border border-gray-200 font-mono text-black">
-                admin123
-              </code>{' '}
-              grants immediate admin access.
-            </p>
+        <div className="bg-gray-50 border border-gray-200 p-3.5 text-xs text-gray-600 space-y-1">
+          <div className="flex items-center gap-1.5 font-medium text-black">
+            <Info className="w-3.5 h-3.5 text-plum" />
+            <span>Owner Portal Access</span>
           </div>
-        )}
+          <p className="text-[11px] text-gray-500 font-sans">
+            Default credentials:{' '}
+            <code className="bg-white px-1 py-0.5 border border-gray-200 font-mono text-black">
+              admin@sanaat.pk
+            </code>{' '}
+            / password{' '}
+            <code className="bg-white px-1 py-0.5 border border-gray-200 font-mono text-black">
+              admin123
+            </code>
+          </p>
+        </div>
 
         <div className="text-center pt-2">
           <Link

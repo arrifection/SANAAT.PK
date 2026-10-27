@@ -20,13 +20,14 @@ import type {
 import { getDisplayStatus, isStorefrontVisible } from '../../utils/stock';
 import { generateId, slugify } from '../../utils';
 
-const delay = () => new Promise<void>((r) => setTimeout(r, 80));
+const delay = () => new Promise<void>((r) => setTimeout(r, 60));
 
 export function createMockProductService(
   products: Product[],
   images: ProductImage[],
   variants: ProductVariant[],
   categories: Category[],
+  onMutation?: () => void,
 ): ProductService {
   // ── Helpers ──
 
@@ -60,6 +61,16 @@ export function createMockProductService(
       result = result.filter((p) => matchesDisplayStatus(p, filters.status!));
     }
 
+    if (filters.search) {
+      const query = filters.search.toLowerCase();
+      result = result.filter((p) => {
+        const inName = p.name.toLowerCase().includes(query);
+        const inDesc = p.description?.toLowerCase().includes(query) ?? false;
+        const inTags = p.tags.some((t) => t.toLowerCase().includes(query));
+        return inName || inDesc || inTags;
+      });
+    }
+
     if (filters.is_featured !== undefined) {
       result = result.filter((p) => p.is_featured === filters.is_featured);
     }
@@ -72,52 +83,36 @@ export function createMockProductService(
       result = result.filter((p) => p.is_preorder === filters.is_preorder);
     }
 
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.slug.toLowerCase().includes(q) ||
-          p.tags.some((t) => t.toLowerCase().includes(q)) ||
-          (p.description?.toLowerCase().includes(q) ?? false),
-      );
-    }
-
     return result;
   }
 
   function applySort(list: Product[], sort?: ProductFilters['sort']): Product[] {
-    const sorted = [...list];
+    const copy = [...list];
     switch (sort) {
       case 'newest':
-        return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return copy.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       case 'oldest':
-        return sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        return copy.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
       case 'price_asc':
-        return sorted.sort((a, b) => a.price - b.price);
+        return copy.sort((a, b) => a.price - b.price);
       case 'price_desc':
-        return sorted.sort((a, b) => b.price - a.price);
+        return copy.sort((a, b) => b.price - a.price);
       case 'name_asc':
-        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+        return copy.sort((a, b) => a.name.localeCompare(b.name));
       case 'name_desc':
-        return sorted.sort((a, b) => b.name.localeCompare(a.name));
+        return copy.sort((a, b) => b.name.localeCompare(a.name));
       default:
-        return sorted.sort((a, b) => a.display_order - b.display_order);
+        return copy.sort((a, b) => a.display_order - b.display_order);
     }
   }
 
-  function paginate<T>(list: T[], page: number, limit: number): PaginatedResult<T> {
-    const total = list.length;
-    const totalPages = Math.max(1, Math.ceil(total / limit));
-    const safePage = Math.min(Math.max(1, page), totalPages);
-    const start = (safePage - 1) * limit;
-    return {
-      data: list.slice(start, start + limit),
-      total,
-      page: safePage,
-      limit,
-      totalPages,
-    };
+  function paginate<T>(items: T[], page: number, limit: number): PaginatedResult<T> {
+    const total = items.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const offset = (page - 1) * limit;
+    const data = items.slice(offset, offset + limit);
+
+    return { data, total, page, limit, totalPages };
   }
 
   // ── Service ──
@@ -172,7 +167,7 @@ export function createMockProductService(
     async getRelatedProducts(productId: string, categoryId: string | null, limit = 4) {
       await delay();
       return products
-        .filter((p) => isStorefrontVisible(p) && p.id !== productId && p.category_id === categoryId)
+        .filter((p) => isStorefrontVisible(p) && p.id !== productId && (!categoryId || p.category_id === categoryId))
         .sort((a, b) => a.display_order - b.display_order)
         .slice(0, limit)
         .map(hydrate);
@@ -192,7 +187,7 @@ export function createMockProductService(
       const filtered = applyFilters(products, filters);
       const sorted = applySort(filtered, filters.sort ?? 'newest');
       const page = filters.page ?? 1;
-      const limit = filters.limit ?? 20;
+      const limit = filters.limit ?? 50;
       return paginate(sorted.map(hydrate), page, limit);
     },
 
@@ -212,7 +207,8 @@ export function createMockProductService(
         created_at: now,
         updated_at: now,
       };
-      products.push(product);
+      products.unshift(product);
+      onMutation?.();
       return product;
     },
 
@@ -225,6 +221,7 @@ export function createMockProductService(
         ...data,
         updated_at: new Date().toISOString(),
       };
+      onMutation?.();
       return products[idx];
     },
 
@@ -245,6 +242,8 @@ export function createMockProductService(
         .filter((i) => i !== -1)
         .reverse();
       for (const i of varIndicesToRemove) variants.splice(i, 1);
+
+      onMutation?.();
     },
 
     // ── Images ──
@@ -253,6 +252,7 @@ export function createMockProductService(
       await delay();
       const image: ProductImage = { id: generateId(), ...data };
       images.push(image);
+      onMutation?.();
       return image;
     },
 
@@ -261,6 +261,7 @@ export function createMockProductService(
       const idx = images.findIndex((i) => i.id === id);
       if (idx === -1) throw new Error(`Image not found: ${id}`);
       images[idx] = { ...images[idx], ...data };
+      onMutation?.();
       return images[idx];
     },
 
@@ -269,6 +270,7 @@ export function createMockProductService(
       const idx = images.findIndex((i) => i.id === id);
       if (idx === -1) throw new Error(`Image not found: ${id}`);
       images.splice(idx, 1);
+      onMutation?.();
     },
 
     async reorderProductImages(productId: string, imageIds: string[]) {
@@ -277,6 +279,7 @@ export function createMockProductService(
         const img = images.find((i) => i.id === imgId && i.product_id === productId);
         if (img) img.position = position;
       });
+      onMutation?.();
     },
 
     // ── Variants ──
@@ -297,6 +300,7 @@ export function createMockProductService(
         ...v,
       }));
       variants.push(...created);
+      onMutation?.();
       return created;
     },
 
@@ -305,6 +309,19 @@ export function createMockProductService(
       const variant = variants.find((v) => v.id === variantId);
       if (!variant) throw new Error(`Variant not found: ${variantId}`);
       variant.stock_quantity = Math.max(0, quantity);
+
+      // Section 18: If stock reaches zero across variants, automatically mark product OUT OF STOCK
+      const productVariants = variants.filter((v) => v.product_id === variant.product_id);
+      const totalStock = productVariants.reduce((sum, v) => sum + v.stock_quantity, 0);
+      const prodIdx = products.findIndex((p) => p.id === variant.product_id);
+      if (prodIdx > -1) {
+        if (totalStock === 0 && !products[prodIdx].is_preorder) {
+          // If total stock is 0 and not preorder, keep it updated
+          products[prodIdx].updated_at = new Date().toISOString();
+        }
+      }
+
+      onMutation?.();
       return { ...variant };
     },
   };

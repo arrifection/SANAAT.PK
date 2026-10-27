@@ -1,720 +1,619 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useForm, useFieldArray } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   useAdminProductById,
   useCreateProduct,
   useUpdateProduct,
   useSetProductVariants,
   useAddProductImage,
-  useDeleteProductImage,
 } from '../../hooks/use-products';
 import { useCategories } from '../../hooks/use-categories';
-import { useServices } from '../../hooks/use-services';
-import { slugify } from '../../utils';
+import { slugify, formatPrice } from '../../utils';
 import { Button, Input, Select, Textarea } from '../../components/ui';
-import { SEO, PageLoader, SafeImage } from '../../components/common';
+import { SEO, PageLoader } from '../../components/common';
 import { useToast } from '../../components/ui/toast';
-import { ArrowLeft, Plus, Trash2, Upload } from 'lucide-react';
-import type { ProductInsert } from '../../types';
+import {
+  suggestedProductNames,
+  productDescriptionTemplates,
+} from '../../content/site-content';
+import { ArrowLeft, Upload, Trash2 } from 'lucide-react';
 
-interface ProductFormValues {
-  name: string;
-  slug: string;
-  description?: string;
-  price: number;
-  compare_at_price?: number | null;
-  category_id?: string | null;
-  status: 'active' | 'draft' | 'archived';
-  is_published: boolean;
-  is_featured: boolean;
-  is_preorder: boolean;
-  preorder_closes_at?: string | null;
-  estimated_dispatch_date?: string | null;
-  preorder_limit?: number | null;
-  tags?: string;
-  fabric?: string;
-  care_instructions?: string;
-  details?: string;
-  display_order: number;
-  low_stock_threshold: number;
-  variants: Array<{
-    size: string;
-    stock_quantity: number;
-    sku?: string;
-  }>;
-}
-
-const productSchema = z.object({
-  name: z.string().min(2, 'Name is required'),
-  slug: z.string().min(2, 'Slug is required'),
-  description: z.string().optional(),
-  price: z.number().min(0, 'Price must be greater than or equal to 0'),
-  compare_at_price: z.number().nullable().optional(),
-  category_id: z.string().nullable().optional(),
-  status: z.enum(['active', 'draft', 'archived']),
-  is_published: z.boolean(),
-  is_featured: z.boolean(),
-  is_preorder: z.boolean(),
-  preorder_closes_at: z.string().nullable().optional(),
-  estimated_dispatch_date: z.string().nullable().optional(),
-  preorder_limit: z.number().nullable().optional(),
-  tags: z.string().optional(),
-  fabric: z.string().optional(),
-  care_instructions: z.string().optional(),
-  details: z.string().optional(),
-  display_order: z.number(),
-  low_stock_threshold: z.number(),
-  variants: z
-    .array(
-      z.object({
-        size: z.string().min(1, 'Size required'),
-        stock_quantity: z.number().min(0, 'Stock cannot be negative'),
-        sku: z.string().optional(),
-      })
-    )
-    .min(1, 'At least one size variant is required'),
-});
-
-type ProductFormData = z.infer<typeof productSchema>;
+const COMMON_COLORS = ['Plum', 'Ivory', 'Sage', 'Charcoal', 'Emerald', 'Blush'];
 
 export function AdminProductFormPage() {
   const { id } = useParams<{ id: string }>();
   const isEditing = Boolean(id && id !== 'new');
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const services = useServices();
 
-  const { data: existingProduct, isLoading: isLoadingProduct } = useAdminProductById(
+  const { data: categories } = useCategories();
+  const { data: existingProduct, isLoading: isLoadingExisting } = useAdminProductById(
     isEditing ? id! : ''
   );
-  const { data: categories } = useCategories();
 
   const { mutateAsync: createProduct, isPending: isCreating } = useCreateProduct();
   const { mutateAsync: updateProduct, isPending: isUpdating } = useUpdateProduct();
   const { mutateAsync: setVariants } = useSetProductVariants();
-  const { mutateAsync: addImageRecord } = useAddProductImage();
-  const { mutateAsync: deleteImageRecord } = useDeleteProductImage();
+  const { mutateAsync: addProductImage } = useAddProductImage();
 
-  const [uploadedImages, setUploadedImages] = useState<
-    Array<{ id?: string; url: string; alt_text?: string | null }>
-  >([]);
-  const [isUploading, setIsUploading] = useState(false);
+  // 1. Photos (Up to 3 images per Section 17)
+  const [images, setImages] = useState<Array<{ id?: string; url: string; file?: File }>>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<ProductFormValues>({
-    resolver: zodResolver(productSchema) as any,
-    defaultValues: {
-      name: '',
-      slug: '',
-      price: 0,
-      compare_at_price: null,
-      status: 'active',
-      is_published: true,
-      is_featured: false,
-      is_preorder: false,
-      low_stock_threshold: 3,
-      display_order: 0,
-      variants: [
-        { size: 'XS', stock_quantity: 5 },
-        { size: 'S', stock_quantity: 5 },
-        { size: 'M', stock_quantity: 5 },
-        { size: 'L', stock_quantity: 5 },
-      ],
-    },
+  // 2. Product Name & Slug
+  const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
+
+  // 3. Color
+  const [color, setColor] = useState('Plum');
+
+  // 4. Price
+  const [price, setPrice] = useState<number | ''>(16500);
+
+  // 5. Collection
+  const [categoryId, setCategoryId] = useState('');
+
+  // 6. Sizes (Default: S, M, L, XL per Section 17)
+  const [sizes, setSizes] = useState<{ [key: string]: { enabled: boolean; stock: number } }>({
+    S: { enabled: true, stock: 5 },
+    M: { enabled: true, stock: 5 },
+    L: { enabled: true, stock: 5 },
+    XL: { enabled: true, stock: 5 },
   });
 
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'variants',
-  });
+  // 7. Status
+  const [statusType, setStatusType] = useState<
+    'available' | 'preorder' | 'draft' | 'low_stock' | 'out_of_stock' | 'archived'
+  >('available');
 
-  const isPreorder = watch('is_preorder');
-  const productName = watch('name');
+  // 8. Description
+  const [description, setDescription] = useState('');
 
-  // Load existing data when editing
+  // Populate data when editing
   useEffect(() => {
     if (existingProduct) {
-      reset({
-        name: existingProduct.name,
-        slug: existingProduct.slug,
-        description: existingProduct.description || '',
-        price: existingProduct.price,
-        compare_at_price: existingProduct.compare_at_price,
-        category_id: existingProduct.category_id,
-        status: existingProduct.status,
-        is_published: existingProduct.is_published,
-        is_featured: existingProduct.is_featured,
-        is_preorder: existingProduct.is_preorder,
-        preorder_closes_at: existingProduct.preorder_closes_at
-          ? existingProduct.preorder_closes_at.slice(0, 16)
-          : null,
-        estimated_dispatch_date: existingProduct.estimated_dispatch_date
-          ? existingProduct.estimated_dispatch_date.slice(0, 10)
-          : null,
-        preorder_limit: existingProduct.preorder_limit,
-        tags: existingProduct.tags?.join(', ') || '',
-        fabric: existingProduct.fabric || '',
-        care_instructions: existingProduct.care_instructions || '',
-        details: existingProduct.details || '',
-        display_order: existingProduct.display_order,
-        low_stock_threshold: existingProduct.low_stock_threshold,
-        variants:
-          existingProduct.variants.length > 0
-            ? existingProduct.variants.map((v) => ({
-                size: v.size,
-                stock_quantity: v.stock_quantity,
-                sku: v.sku || undefined,
-              }))
-            : [{ size: 'ONE SIZE', stock_quantity: 10 }],
-      });
+      setName(existingProduct.name);
+      setSlug(existingProduct.slug);
+      setPrice(existingProduct.price);
+      setCategoryId(existingProduct.category_id || '');
+      setDescription(existingProduct.description || '');
 
-      setUploadedImages(
-        existingProduct.images.map((img) => ({
-          id: img.id,
-          url: img.url,
-          alt_text: img.alt_text,
-        }))
-      );
+      // Infer color
+      const foundColor = existingProduct.tags?.find((t) => COMMON_COLORS.includes(t)) || 'Plum';
+      setColor(foundColor);
+
+      // Infer status
+      if (existingProduct.status === 'draft') setStatusType('draft');
+      else if (existingProduct.status === 'archived') setStatusType('archived');
+      else if (existingProduct.is_preorder) setStatusType('preorder');
+      else setStatusType('available');
+
+      // Populate existing images (up to 3)
+      if (existingProduct.images && existingProduct.images.length > 0) {
+        setImages(
+          existingProduct.images.slice(0, 3).map((img) => ({
+            id: img.id,
+            url: img.url,
+          }))
+        );
+      }
+
+      // Populate variants
+      if (existingProduct.variants && existingProduct.variants.length > 0) {
+        const nextSizes = {
+          S: { enabled: false, stock: 0 },
+          M: { enabled: false, stock: 0 },
+          L: { enabled: false, stock: 0 },
+          XL: { enabled: false, stock: 0 },
+        };
+        for (const v of existingProduct.variants) {
+          if (nextSizes[v.size as keyof typeof nextSizes]) {
+            nextSizes[v.size as keyof typeof nextSizes] = {
+              enabled: true,
+              stock: v.stock_quantity,
+            };
+          }
+        }
+        setSizes(nextSizes);
+      }
+    } else if (categories && categories.length > 0 && !categoryId) {
+      setCategoryId(categories[0].id);
+      // Auto populate first template
+      setDescription(productDescriptionTemplates[0].generate('Noor', 'Plum'));
     }
-  }, [existingProduct, reset]);
+  }, [existingProduct, categories]);
 
-  // Auto-slugify on title change for new products
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setValue('name', val);
-    if (!isEditing) {
-      setValue('slug', slugify(val));
+  // Name select helper
+  const handleSelectSuggestedName = (suggested: string) => {
+    setName(suggested);
+    setSlug(slugify(suggested));
+  };
+
+  // Color select helper
+  const handleSelectColor = (selectedColor: string) => {
+    setColor(selectedColor);
+  };
+
+  // Template select helper
+  const handleSelectTemplate = (templateId: string) => {
+    const tmpl = productDescriptionTemplates.find((t) => t.id === templateId);
+    if (tmpl) {
+      setDescription(tmpl.generate(name || 'Dress', color || 'Plum'));
     }
   };
 
-  // Image Upload Handler
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Photo Upload (up to 3)
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    setIsUploading(true);
-    try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const res = await services.storage.uploadProductImage(
-          file,
-          isEditing ? id! : 'temp'
-        );
-
-        if (isEditing) {
-          const newImg = await addImageRecord({
-            product_id: id!,
-            url: res.url,
-            storage_path: res.storage_path,
-            alt_text: productName || 'Product photo',
-            position: uploadedImages.length,
-          });
-          setUploadedImages((prev) => [...prev, newImg]);
-        } else {
-          // Keep in local state for newly creating product
-          setUploadedImages((prev) => [
-            ...prev,
-            { url: res.url, alt_text: productName || 'Product photo' },
-          ]);
-        }
-      }
-      addToast({ type: 'success', title: 'Images Uploaded', description: 'Product photos added.' });
-    } catch {
-      addToast({ type: 'error', title: 'Upload Failed', description: 'Could not upload image.' });
-    } finally {
-      setIsUploading(false);
+    const remainingSlots = 3 - images.length;
+    if (remainingSlots <= 0) {
+      addToast({
+        type: 'error',
+        title: 'Limit Reached',
+        description: 'You can upload a maximum of 3 images per dress.',
+      });
+      return;
     }
-  };
 
-  const handleDeleteImage = async (index: number) => {
-    const img = uploadedImages[index];
-    if (img.id) {
-      try {
-        await deleteImageRecord(img.id);
-      } catch {
-        // ignore
-      }
-    }
-    setUploadedImages((prev) => prev.filter((_, i) => i !== index));
-  };
+    const filesToAdd = Array.from(files).slice(0, remainingSlots);
 
-  const onSubmit = async (data: ProductFormData) => {
-    try {
-      const tagsArray = data.tags
-        ? data.tags.split(',').map((t) => t.trim()).filter(Boolean)
-        : [];
-
-      const payload: ProductInsert = {
-        name: data.name,
-        slug: data.slug,
-        description: data.description || null,
-        price: data.price,
-        compare_at_price: data.compare_at_price || null,
-        category_id: data.category_id || null,
-        status: data.status,
-        is_published: data.is_published,
-        is_featured: data.is_featured,
-        is_preorder: data.is_preorder,
-        preorder_closes_at: data.preorder_closes_at || null,
-        estimated_dispatch_date: data.estimated_dispatch_date || null,
-        preorder_limit: data.preorder_limit || null,
-        tags: tagsArray,
-        fabric: data.fabric || null,
-        care_instructions: data.care_instructions || null,
-        details: data.details || null,
-        display_order: data.display_order,
-        low_stock_threshold: data.low_stock_threshold,
+    filesToAdd.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImages((prev) => [
+          ...prev,
+          { url: reader.result as string, file },
+        ]);
       };
+      reader.readAsDataURL(file);
+    });
 
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Toggle size
+  const handleToggleSize = (sizeKey: string) => {
+    setSizes((prev) => ({
+      ...prev,
+      [sizeKey]: {
+        ...prev[sizeKey],
+        enabled: !prev[sizeKey].enabled,
+      },
+    }));
+  };
+
+  const handleStockChange = (sizeKey: string, val: number) => {
+    setSizes((prev) => ({
+      ...prev,
+      [sizeKey]: {
+        ...prev[sizeKey],
+        stock: Math.max(0, val),
+      },
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!name.trim()) {
+      addToast({ type: 'error', title: 'Name Required', description: 'Please enter or select a dress name.' });
+      return;
+    }
+
+    if (!price || Number(price) <= 0) {
+      addToast({ type: 'error', title: 'Price Required', description: 'Please enter a valid price in PKR.' });
+      return;
+    }
+
+    const enabledVariants = Object.entries(sizes)
+      .filter(([_, config]) => config.enabled)
+      .map(([sizeKey, config]) => ({
+        size: sizeKey,
+        stock_quantity: statusType === 'out_of_stock' ? 0 : config.stock,
+        sku: `SAN-${slugify(name).toUpperCase()}-${sizeKey}`,
+      }));
+
+    if (enabledVariants.length === 0) {
+      addToast({ type: 'error', title: 'Size Required', description: 'Please enable at least one size (S, M, L, XL).' });
+      return;
+    }
+
+    const isPreorder = statusType === 'preorder';
+    const isPublished = statusType !== 'draft';
+    const rawStatus = statusType === 'archived' ? 'archived' : statusType === 'draft' ? 'draft' : 'active';
+
+    try {
       let productId = id;
 
-      if (isEditing) {
-        await updateProduct({ id: id!, data: payload });
-        await setVariants({
-          productId: id!,
-          variants: data.variants.map((v) => ({
-            size: v.size,
-            stock_quantity: v.stock_quantity,
-            sku: v.sku || null,
-          })),
-        });
-        addToast({
-          type: 'success',
-          title: 'Product Updated',
-          description: `"${data.name}" changes saved.`,
-        });
+      const productPayload = {
+        name: name.trim(),
+        slug: slug.trim() || slugify(name),
+        description: description.trim(),
+        price: Number(price),
+        compare_at_price: null,
+        category_id: categoryId || null,
+        status: rawStatus as any,
+        is_published: isPublished,
+        is_featured: false,
+        is_preorder: isPreorder,
+        preorder_closes_at: null,
+        estimated_dispatch_date: null,
+        preorder_limit: isPreorder ? 30 : null,
+        tags: [color, isPreorder ? 'Pre-Order' : 'Available'],
+        fabric: `${color} Pure Silk / Velvet / Lawn`,
+        care_instructions: 'Dry clean recommended.',
+        details: 'Graceful three-piece ensemble tailored with artisanal finishings.',
+        display_order: 0,
+        low_stock_threshold: 3,
+      };
+
+      if (isEditing && productId) {
+        await updateProduct({ id: productId, data: productPayload });
       } else {
-        const newProd = await createProduct(payload);
-        productId = newProd.id;
-
-        // Set variants
-        await setVariants({
-          productId,
-          variants: data.variants.map((v) => ({
-            size: v.size,
-            stock_quantity: v.stock_quantity,
-            sku: v.sku || null,
-          })),
-        });
-
-        // Add uploaded images
-        for (let i = 0; i < uploadedImages.length; i++) {
-          await addImageRecord({
-            product_id: productId,
-            url: uploadedImages[i].url,
-            storage_path: null,
-            alt_text: data.name,
-            position: i,
-          });
-        }
-
-        addToast({
-          type: 'success',
-          title: 'Product Created',
-          description: `"${data.name}" added to inventory.`,
-        });
+        const created = await createProduct(productPayload);
+        productId = created.id;
       }
+
+      // Save variants
+      if (productId) {
+        await setVariants({ productId, variants: enabledVariants });
+
+        // Save images
+        for (let i = 0; i < images.length; i++) {
+          const img = images[i];
+          if (!img.id) {
+            await addProductImage({
+              product_id: productId,
+              url: img.url,
+              storage_path: null,
+              alt_text: `${name} — view ${i + 1}`,
+              position: i,
+            });
+          }
+        }
+      }
+
+      addToast({
+        type: 'success',
+        title: isEditing ? 'Product Updated' : 'Product Published',
+        description: `"${name}" is now live on Sanaat.`,
+      });
 
       navigate('/admin/products');
     } catch (err) {
       addToast({
         type: 'error',
-        title: 'Save Failed',
-        description: err instanceof Error ? err.message : 'Please check required fields.',
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to save product.',
       });
     }
   };
 
-  if (isEditing && isLoadingProduct) {
-    return <PageLoader message="Loading product data..." />;
+  if (isEditing && isLoadingExisting) {
+    return <PageLoader message="Loading dress details..." />;
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-16">
-      <SEO title={`${isEditing ? 'Edit Product' : 'New Product'} | SANAAT Admin`} />
+    <div className="max-w-3xl mx-auto space-y-6 pb-20">
+      <SEO title={`${isEditing ? 'Edit' : 'Add'} Product | SANAAT Admin`} />
 
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-gray-200">
-        <div className="flex items-center gap-4">
-          <Link
-            to="/admin/products"
-            className="p-1.5 text-gray-500 hover:text-black hover:bg-gray-100 rounded-sm"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-serif text-black">
-              {isEditing ? `Edit: ${existingProduct?.name}` : 'Create New Product'}
-            </h1>
-            <p className="text-xs uppercase tracking-widest text-gray-400 mt-0.5">
-              {isEditing ? 'Modify product parameters and inventory' : 'Add a new modest piece to catalog'}
-            </p>
-          </div>
-        </div>
-
-        <Button
-          type="button"
-          onClick={handleSubmit(onSubmit)}
-          variant="primary"
-          loading={isCreating || isUpdating}
-          className="text-xs tracking-widest px-6"
+      <div className="flex items-center gap-4 pb-4 border-b border-gray-200">
+        <Link
+          to="/admin/products"
+          className="p-1.5 text-gray-500 hover:text-black hover:bg-gray-100 rounded-sm"
         >
-          {isEditing ? 'SAVE CHANGES' : 'PUBLISH PRODUCT'}
-        </Button>
+          <ArrowLeft className="w-5 h-5" />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-serif text-black">
+            {isEditing ? `Edit "${name || 'Dress'}"` : 'Add New Dress'}
+          </h1>
+          <p className="text-xs uppercase tracking-widest text-gray-400 mt-0.5">
+            Effortless product publishing in under 2 minutes
+          </p>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-        {/* Section 1: Core Details */}
-        <div className="bg-white p-6 border border-gray-200 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-black border-b border-gray-100 pb-2">
-            1. Basic Information
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Product Title *"
-              placeholder="e.g. Aalia Silk Embroidered Kurti"
-              error={errors.name?.message}
-              {...register('name')}
-              onChange={handleNameChange}
-            />
-
-            <Input
-              label="URL Slug *"
-              placeholder="aalia-silk-embroidered-kurti"
-              error={errors.slug?.message}
-              {...register('slug')}
-            />
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* 1. Photos Upload (Max 3 Images per Section 17) */}
+        <div className="bg-white p-5 border border-gray-200 space-y-3">
+          <div className="flex justify-between items-baseline">
+            <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black">
+              Dress Photography (Up to 3 Photos) *
+            </label>
+            <span className="text-[11px] text-gray-400">
+              {images.length}/3 uploaded
+            </span>
           </div>
 
-          <Textarea
-            label="Product Description"
-            placeholder="Describe the silhouette, embroidery details, and style inspiration..."
-            rows={4}
-            error={errors.description?.message}
-            {...register('description')}
-          />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Select
-              label="Category"
-              error={errors.category_id?.message}
-              {...register('category_id')}
-            >
-              <option value="">No Category</option>
-              {categories?.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </Select>
-
-            <Input
-              label="Search Tags (comma-separated)"
-              placeholder="lawn, summer, formal, embroidered"
-              error={errors.tags?.message}
-              {...register('tags')}
-            />
-          </div>
-        </div>
-
-        {/* Section 2: Pricing & Inventory */}
-        <div className="bg-white p-6 border border-gray-200 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-black border-b border-gray-100 pb-2">
-            2. Pricing & Stock Thresholds
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Input
-              label="Retail Price (PKR) *"
-              type="number"
-              placeholder="12500"
-              error={errors.price?.message}
-              {...register('price')}
-            />
-
-            <Input
-              label="Compare-at Price (for Sale strike-through)"
-              type="number"
-              placeholder="15000"
-              error={errors.compare_at_price?.message}
-              {...register('compare_at_price')}
-            />
-
-            <Input
-              label="Low Stock Alert Threshold"
-              type="number"
-              defaultValue={3}
-              helperText="Badge triggers when stock ≤ this number"
-              error={errors.low_stock_threshold?.message}
-              {...register('low_stock_threshold')}
-            />
-          </div>
-        </div>
-
-        {/* Section 3: Size Variants & Quantity */}
-        <div className="bg-white p-6 border border-gray-200 space-y-4">
-          <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-            <div>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-black">
-                3. Size Variants & Inventory
-              </h2>
-              <p className="text-[11px] text-gray-500">
-                Stock is tracked per size. If single-size, use &ldquo;ONE SIZE&rdquo;.
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => append({ size: 'M', stock_quantity: 5 })}
-              className="text-xs"
-            >
-              <Plus className="w-3.5 h-3.5 mr-1" />
-              Add Size
-            </Button>
-          </div>
-
-          <div className="space-y-2">
-            {fields.map((field, idx) => (
-              <div key={field.id} className="flex items-center gap-3 bg-gray-50 p-2.5 rounded-sm">
-                <div className="w-28">
-                  <Input
-                    placeholder="Size (e.g. S)"
-                    className="text-xs uppercase font-semibold h-8"
-                    {...register(`variants.${idx}.size` as const)}
-                  />
-                </div>
-                <div className="w-36">
-                  <Input
-                    type="number"
-                    placeholder="Stock Qty"
-                    className="text-xs h-8"
-                    {...register(`variants.${idx}.stock_quantity` as const)}
-                  />
-                </div>
-                <div className="flex-1">
-                  <Input
-                    placeholder="Optional SKU (e.g. SNT-LAWN-S)"
-                    className="text-xs h-8"
-                    {...register(`variants.${idx}.sku` as const)}
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => remove(idx)}
-                  className="p-1.5 text-gray-400 hover:text-red-600"
-                  disabled={fields.length === 1}
-                  title="Remove variant"
+          <div className="grid grid-cols-3 gap-3">
+            {[0, 1, 2].map((slotIdx) => {
+              const img = images[slotIdx];
+              return (
+                <div
+                  key={slotIdx}
+                  className="aspect-[3/4] border border-dashed border-gray-300 relative bg-gray-50 flex flex-col items-center justify-center overflow-hidden"
                 >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-          {errors.variants?.message && (
-            <p className="text-xs text-red-600">{errors.variants.message}</p>
-          )}
-        </div>
-
-        {/* Section 4: Imagery */}
-        <div className="bg-white p-6 border border-gray-200 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-black border-b border-gray-100 pb-2">
-            4. Product Photography
-          </h2>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-            {uploadedImages.map((img, i) => (
-              <div key={i} className="group relative aspect-[3/4] bg-gray-100 overflow-hidden border">
-                <SafeImage src={img.url} alt="Photo" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
-                  <span className="text-[10px] text-white bg-black/70 px-1 py-0.5 self-start">
-                    {i === 0 ? 'Primary' : `#${i + 1}`}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteImage(i)}
-                    className="p-1 bg-red-600 text-white rounded-full self-end hover:bg-red-700"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
+                  {img ? (
+                    <>
+                      <img
+                        src={img.url}
+                        alt={`Slot ${slotIdx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(slotIdx)}
+                        className="absolute top-1.5 right-1.5 bg-black/75 hover:bg-red-600 text-white p-1 rounded-full transition-colors"
+                        aria-label="Remove image"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="absolute bottom-1.5 left-1.5 bg-black/60 text-white text-[9px] px-1.5 py-0.5 font-sans uppercase tracking-widest">
+                        Photo {slotIdx + 1}
+                      </span>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full h-full flex flex-col items-center justify-center p-2 text-gray-400 hover:text-plum hover:bg-gray-100 transition-colors"
+                    >
+                      <Upload className="w-5 h-5 mb-1" />
+                      <span className="text-[10px] font-sans uppercase tracking-wider font-medium">
+                        + Add Photo {slotIdx + 1}
+                      </span>
+                    </button>
+                  )}
                 </div>
-              </div>
-            ))}
-
-            {/* Upload Box */}
-            <label className="aspect-[3/4] border-2 border-dashed border-gray-200 hover:border-plum flex flex-col items-center justify-center cursor-pointer p-3 text-center transition-colors">
-              <Upload className="w-5 h-5 text-gray-400 mb-1" />
-              <span className="text-[10px] uppercase font-semibold text-gray-600">
-                {isUploading ? 'Uploading...' : 'Upload Photos'}
-              </span>
-              <span className="text-[9px] text-gray-400 mt-0.5">PNG, JPG, WebP</span>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleImageUpload}
-                disabled={isUploading}
-                className="hidden"
-              />
-            </label>
+              );
+            })}
           </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handlePhotoUpload}
+            className="hidden"
+          />
+
+          <p className="text-[11px] text-gray-500 font-sans">
+            Upload clear, vertical fashion photos. The first image will be the primary catalog cover.
+          </p>
         </div>
 
-        {/* Section 5: Pre-Order Configuration */}
-        <div className="bg-white p-6 border border-gray-200 space-y-4">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-            <div>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-black">
-                5. Pre-Order Settings
-              </h2>
-              <p className="text-[11px] text-gray-500">
-                Allows customers to pre-order before stock is manufactured.
-              </p>
+        {/* 2. Dress Name with Suggested Templates (Section 17) */}
+        <div className="bg-white p-5 border border-gray-200 space-y-3">
+          <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black block">
+            Dress Name *
+          </label>
+
+          {/* Suggested Names Chips */}
+          <div>
+            <span className="text-[11px] text-gray-400 uppercase tracking-wider block mb-1.5 font-light">
+              Suggested Sanaat Names (Click to select):
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {suggestedProductNames.map((sug) => (
+                <button
+                  key={sug}
+                  type="button"
+                  onClick={() => handleSelectSuggestedName(sug)}
+                  className={`text-xs px-3 py-1 font-serif border transition-colors ${
+                    name === sug
+                      ? 'border-plum bg-plum text-white font-medium'
+                      : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  {sug}
+                </button>
+              ))}
             </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                className="rounded text-plum focus:ring-plum"
-                {...register('is_preorder')}
-              />
-              <span className="text-xs font-semibold uppercase tracking-wider text-black">
-                Enable Pre-Order
-              </span>
-            </label>
           </div>
 
-          {isPreorder && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-              <Input
-                label="Pre-Order Closes At"
-                type="datetime-local"
-                helperText="Purchase button closes after this date"
-                error={errors.preorder_closes_at?.message}
-                {...register('preorder_closes_at')}
-              />
-
-              <Input
-                label="Estimated Dispatch Date"
-                type="date"
-                helperText="Shown on product page"
-                error={errors.estimated_dispatch_date?.message}
-                {...register('estimated_dispatch_date')}
-              />
-
-              <Input
-                label="Order Limit (Cap)"
-                type="number"
-                placeholder="e.g. 50"
-                helperText="Max units permitted before closing"
-                error={errors.preorder_limit?.message}
-                {...register('preorder_limit')}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Section 6: Garment Specifications */}
-        <div className="bg-white p-6 border border-gray-200 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-black border-b border-gray-100 pb-2">
-            6. Fabric & Care Details
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Fabric & Textile Description"
-              placeholder="e.g. Pure Cotton Lawn shirt with Organza dupatta"
-              error={errors.fabric?.message}
-              {...register('fabric')}
-            />
-
-            <Input
-              label="Care Instructions"
-              placeholder="e.g. Dry clean recommended. Do not tumble dry."
-              error={errors.care_instructions?.message}
-              {...register('care_instructions')}
-            />
-          </div>
-
-          <Textarea
-            label="Additional Garment Details"
-            placeholder="Embroidery notes, cut type (straight/A-line), trousers included, etc."
-            rows={2}
-            error={errors.details?.message}
-            {...register('details')}
+          <Input
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              setSlug(slugify(e.target.value));
+            }}
+            placeholder="e.g. Noor, Mehr, Aira..."
+            required
           />
         </div>
 
-        {/* Section 7: Publishing & Status Flags */}
-        <div className="bg-white p-6 border border-gray-200 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-black border-b border-gray-100 pb-2">
-            7. Publishing State & Priority
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Select label="Lifecycle Status" {...register('status')}>
-              <option value="active">Active</option>
-              <option value="draft">Draft (Hidden)</option>
-              <option value="archived">Archived</option>
-            </Select>
-
-            <Input
-              label="Display Priority (Order)"
-              type="number"
-              defaultValue={0}
-              helperText="Lower numbers appear first on storefront"
-              {...register('display_order')}
-            />
-
-            <div className="flex flex-col justify-center space-y-2 pt-4">
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold uppercase text-black">
-                <input
-                  type="checkbox"
-                  className="rounded text-plum focus:ring-plum"
-                  {...register('is_published')}
-                />
-                <span>Published to Store</span>
+        {/* 3. Color & Price */}
+        <div className="bg-white p-5 border border-gray-200 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Color */}
+            <div>
+              <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black block mb-1">
+                Color *
               </label>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {COMMON_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => handleSelectColor(c)}
+                    className={`text-[11px] px-2 py-0.5 border ${
+                      color === c
+                        ? 'border-plum bg-plum text-white font-medium'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+              <Input
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                placeholder="e.g. Plum, Ivory, Sage"
+                required
+              />
+            </div>
 
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold uppercase text-black">
-                <input
-                  type="checkbox"
-                  className="rounded text-plum focus:ring-plum"
-                  {...register('is_featured')}
-                />
-                <span>Feature on Homepage</span>
+            {/* Price */}
+            <div>
+              <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black block mb-1">
+                Price (PKR) *
               </label>
+              <Input
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value ? Number(e.target.value) : '')}
+                placeholder="16500"
+                min={0}
+                required
+              />
+              <span className="text-[11px] text-gray-400 mt-1 block">
+                Customer sees: {price ? formatPrice(Number(price)) : 'Rs. 0'}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Bottom Actions Bar */}
-        <div className="flex justify-between items-center pt-4">
-          <Link
-            to="/admin/products"
-            className="text-xs uppercase tracking-wider text-gray-500 hover:text-black"
+        {/* 4. Collection Dropdown (Section 17: Winter Formals, Summer Edit, Occasion Wear) */}
+        <div className="bg-white p-5 border border-gray-200 space-y-3">
+          <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black block">
+            Collection *
+          </label>
+          <Select
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            required
           >
-            Cancel
-          </Link>
+            {categories?.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </Select>
+        </div>
 
+        {/* 5. Sizes & Stock (Default: S, M, L, XL per Section 17) */}
+        <div className="bg-white p-5 border border-gray-200 space-y-3">
+          <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black block">
+            Sizes & Available Stock
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {['S', 'M', 'L', 'XL'].map((sKey) => {
+              const isEnabled = sizes[sKey]?.enabled;
+              const stock = sizes[sKey]?.stock ?? 5;
+              return (
+                <div
+                  key={sKey}
+                  className={`p-3 border transition-colors ${
+                    isEnabled ? 'border-plum bg-plum/5' : 'border-gray-200 bg-gray-50 opacity-60'
+                  }`}
+                >
+                  <label className="flex items-center gap-2 cursor-pointer mb-2">
+                    <input
+                      type="checkbox"
+                      checked={isEnabled}
+                      onChange={() => handleToggleSize(sKey)}
+                      className="text-plum focus:ring-plum"
+                    />
+                    <span className="font-serif font-bold text-sm text-black">Size {sKey}</span>
+                  </label>
+                  {isEnabled && (
+                    <div>
+                      <span className="text-[10px] text-gray-500 uppercase block mb-1">
+                        Stock
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={stock}
+                        onChange={(e) => handleStockChange(sKey, Number(e.target.value))}
+                        className="w-full text-xs p-1 border border-gray-300 bg-white"
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 6. Description with 3-4 Reusable Templates (Section 17 & 22) */}
+        <div className="bg-white p-5 border border-gray-200 space-y-3">
+          <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black block">
+            Description Templates
+          </label>
+
+          <div className="flex flex-wrap gap-2">
+            {productDescriptionTemplates.map((tmpl) => (
+              <button
+                key={tmpl.id}
+                type="button"
+                onClick={() => handleSelectTemplate(tmpl.id)}
+                className="text-[11px] px-2.5 py-1 border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-800 transition-colors"
+              >
+                + {tmpl.label}
+              </button>
+            ))}
+          </div>
+
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            placeholder="Description automatically fills when selecting a template above, or type custom copy..."
+          />
+        </div>
+
+        {/* 7. Status Selector (Section 17) */}
+        <div className="bg-white p-5 border border-gray-200 space-y-3">
+          <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black block">
+            Product Status *
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {[
+              { id: 'available', label: 'Available (In Stock)' },
+              { id: 'preorder', label: 'Pre-Order (10-12 Days)' },
+              { id: 'low_stock', label: 'Low Stock' },
+              { id: 'out_of_stock', label: 'Out of Stock' },
+              { id: 'draft', label: 'Draft / Hidden' },
+              { id: 'archived', label: 'Archived' },
+            ].map((st) => (
+              <button
+                key={st.id}
+                type="button"
+                onClick={() => setStatusType(st.id as any)}
+                className={`p-2.5 text-xs text-left border transition-colors ${
+                  statusType === st.id
+                    ? 'border-plum bg-plum text-white font-medium'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {st.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 8. Publish Button */}
+        <div className="pt-2">
           <Button
             type="submit"
             variant="primary"
             size="lg"
+            fullWidth
             loading={isCreating || isUpdating}
-            className="text-xs tracking-widest px-8"
+            className="py-4 text-xs tracking-[0.2em] font-sans font-medium"
           >
-            {isEditing ? 'SAVE CHANGES' : 'CREATE PRODUCT'}
+            {isEditing ? 'SAVE CHANGES' : 'PUBLISH DRESS TO SANAAT'}
           </Button>
         </div>
       </form>

@@ -1,5 +1,6 @@
 // ──────────────────────────────────────────────
-// SANAAT — Mock Seed Data (Demo Only)
+// SANAAT — Authentic Seed Data
+// Collections: Winter Formals, Summer Edit, Occasion Wear
 // ──────────────────────────────────────────────
 
 import type {
@@ -11,705 +12,443 @@ import type {
   OrderItem,
 } from '../../types';
 
-// ── Helpers ──
-
 const now = new Date().toISOString();
-const twoMonthsFromNow = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
-const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
-const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
 
-function placeholder(label: string, w = 600, h = 800): string {
-  return `https://placehold.co/${w}x${h}/f5f5f5/999999?text=${encodeURIComponent(label)}`;
-}
-
-// ── Categories ──
-
-const catFormalId = crypto.randomUUID();
-const catCasualId = crypto.randomUUID();
-const catBridalId = crypto.randomUUID();
-const catAccessoriesId = crypto.randomUUID();
-
+// ── 3 Core Categories per Section 4 ──
 export const seedCategories: Category[] = [
   {
-    id: catFormalId,
-    name: 'Formal Wear',
-    slug: 'formal-wear',
-    description: 'Elegant formal ensembles for special occasions',
-    image_url: placeholder('Formal+Wear', 800, 600),
+    id: 'cat-winter-formals',
+    name: 'Winter Formals',
+    slug: 'winter-formals',
+    description: 'Opulent velvets and rich textures tailored with refined handcraft for winter evenings.',
+    image_url: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=900&q=85&auto=format&fit=crop',
     display_order: 1,
     is_active: true,
     created_at: now,
   },
   {
-    id: catCasualId,
-    name: 'Casual Wear',
-    slug: 'casual-wear',
-    description: 'Everyday luxury in comfortable silhouettes',
-    image_url: placeholder('Casual+Wear', 800, 600),
+    id: 'cat-summer-edit',
+    name: 'Summer Edit',
+    slug: 'summer-edit',
+    description: 'Airy pure cotton lawns and organza pairings designed for graceful summer modesty.',
+    image_url: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=900&q=85&auto=format&fit=crop',
     display_order: 2,
     is_active: true,
     created_at: now,
   },
   {
-    id: catBridalId,
-    name: 'Bridal Collection',
-    slug: 'bridal-collection',
-    description: 'Handcrafted bridal couture for your special day',
-    image_url: placeholder('Bridal+Collection', 800, 600),
+    id: 'cat-occasion-wear',
+    name: 'Occasion Wear',
+    slug: 'occasion-wear',
+    description: 'Heirloom-inspired festive formals featuring delicate resham and tilla handcraft.',
+    image_url: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=900&q=85&auto=format&fit=crop',
     display_order: 3,
     is_active: true,
     created_at: now,
   },
-  {
-    id: catAccessoriesId,
-    name: 'Accessories',
-    slug: 'accessories',
-    description: 'Curated accessories to complement your look',
-    image_url: placeholder('Accessories', 800, 600),
-    display_order: 4,
-    is_active: true,
-    created_at: now,
-  },
 ];
-
-// ── Product IDs (pre-generated for cross-referencing) ──
-
-const p1 = crypto.randomUUID();
-const p2 = crypto.randomUUID();
-const p3 = crypto.randomUUID();
-const p4 = crypto.randomUUID();
-const p5 = crypto.randomUUID();
-const p6 = crypto.randomUUID();
-const p7 = crypto.randomUUID();
-const p8 = crypto.randomUUID();
-const p9 = crypto.randomUUID();
-const p10 = crypto.randomUUID();
-const p11 = crypto.randomUUID();
-const p12 = crypto.randomUUID();
-const p13 = crypto.randomUUID();
-const p14 = crypto.randomUUID();
-
-// ── Helper to build images ──
-
-function makeImages(productId: string, productNum: number, count: number): ProductImage[] {
-  const labels = ['Front', 'Back', 'Detail'];
-  return Array.from({ length: count }, (_, i) => ({
-    id: crypto.randomUUID(),
-    product_id: productId,
-    url: placeholder(`Demo+Product+${String(productNum).padStart(2, '0')}+${labels[i] ?? `View+${i + 1}`}`),
-    storage_path: null,
-    alt_text: `Demo product ${productNum} ${labels[i] ?? `view ${i + 1}`}`,
-    position: i,
-  }));
-}
-
-// ── Helper to build variants ──
-
-type StockMap = Record<string, number>;
-const SIZES = ['XS', 'S', 'M', 'L', 'XL'] as const;
-
-function makeVariants(productId: string, stockMap: StockMap): ProductVariant[] {
-  return SIZES.map((size) => ({
-    id: crypto.randomUUID(),
-    product_id: productId,
-    size,
-    stock_quantity: stockMap[size] ?? 0,
-    sku: null,
-  }));
-}
 
 // ── Products ──
-
 export const seedProducts: Product[] = [
-  // ── 1. Featured + Available (Formal) ──
   {
-    id: p1,
-    name: 'Noor Silk Formal',
-    slug: 'noor-silk-formal',
-    description: 'A stunning silk formal suit with intricate gold thread-work, perfect for evening gatherings.',
+    id: 'prod-noor-001',
+    name: 'Noor',
+    slug: 'noor',
+    description:
+      'A graceful three-piece silhouette crafted in pure Sanaat Plum velvet. Features delicate tonal hand-embroidery along the neckline and cuffs, paired with an embroidered pure silk dupatta. Designed for effortless modesty and timeless presence.',
     price: 18500,
-    compare_at_price: 22000,
-    category_id: catFormalId,
+    compare_at_price: null,
+    category_id: 'cat-winter-formals',
     status: 'active',
     is_published: true,
-    is_featured: true,
-    is_preorder: false,
+    is_featured: true, // Featured dress 1 on homepage
+    is_preorder: true, // Pre-order demonstration
     preorder_closes_at: null,
     estimated_dispatch_date: null,
-    preorder_limit: null,
-    tags: ['silk', 'formal', 'embroidered', 'evening'],
-    fabric: '100% Pure Silk',
-    care_instructions: 'Dry clean only. Store in garment bag.',
-    details: 'Includes shirt, dupatta and trousers. Hand-embroidered neckline and border.',
+    preorder_limit: 25,
+    tags: ['Velvet', 'Plum', 'Winter Formals', 'Pre-Order'],
+    fabric: 'Pure Velvet & Silk Dupatta',
+    care_instructions: 'Dry clean only. Store in a breathable garment bag.',
+    details: 'Three-piece stitched ensemble with hand-finished hems and tonal resham detailing.',
     display_order: 1,
     low_stock_threshold: 3,
-    created_at: oneWeekAgo,
+    created_at: now,
     updated_at: now,
   },
-  // ── 2. Featured + Available (Formal) ──
   {
-    id: p2,
-    name: 'Zara Embroidered Lawn Suit',
-    slug: 'zara-embroidered-lawn-suit',
-    description: 'Premium lawn fabric with delicate floral embroidery and a chiffon dupatta.',
-    price: 7500,
-    compare_at_price: 9000,
-    category_id: catFormalId,
+    id: 'prod-mehr-002',
+    name: 'Mehr',
+    slug: 'mehr',
+    description:
+      'An heirloom-inspired formal ensemble in rich ivory gold. Accented with refined resham threadwork and subtle hand-embellished accents, complemented by an ethereal dupatta. Perfectly suited for intimate gatherings and celebrations.',
+    price: 24000,
+    compare_at_price: null,
+    category_id: 'cat-occasion-wear',
     status: 'active',
     is_published: true,
-    is_featured: true,
+    is_featured: true, // Featured dress 2 on homepage
     is_preorder: false,
     preorder_closes_at: null,
     estimated_dispatch_date: null,
     preorder_limit: null,
-    tags: ['lawn', 'embroidered', 'summer', 'formal'],
-    fabric: 'Premium Lawn with Chiffon Dupatta',
-    care_instructions: 'Machine wash cold. Hang dry. Iron on medium.',
-    details: '3-piece suit: shirt, trousers, chiffon dupatta. Embroidered front and sleeves.',
+    tags: ['Raw Silk', 'Ivory', 'Occasion Wear'],
+    fabric: 'Pure Raw Silk with Organza Dupatta',
+    care_instructions: 'Dry clean only.',
+    details: 'Long shirt with tailored straight trousers and embroidered dupatta borders.',
     display_order: 2,
     low_stock_threshold: 3,
-    created_at: oneWeekAgo,
+    created_at: now,
     updated_at: now,
   },
-  // ── 3. Featured + Available (Casual) ──
   {
-    id: p3,
-    name: 'Aisha Cotton Kurta',
-    slug: 'aisha-cotton-kurta',
-    description: 'Breathable cotton kurta with minimalist block print, ideal for daily wear.',
-    price: 4200,
+    id: 'prod-aira-003',
+    name: 'Aira',
+    slug: 'aira',
+    description:
+      'Understated elegance for the modern woman. Cut in pure breathable handloom lawn in powder sage, featuring minimalist finishings and a relaxed modest drape. An indispensable staple for considered wardrobes.',
+    price: 14500,
     compare_at_price: null,
-    category_id: catCasualId,
+    category_id: 'cat-summer-edit',
     status: 'active',
     is_published: true,
-    is_featured: true,
+    is_featured: true, // Featured dress 3 on homepage
     is_preorder: false,
     preorder_closes_at: null,
     estimated_dispatch_date: null,
     preorder_limit: null,
-    tags: ['cotton', 'casual', 'summer', 'block-print'],
-    fabric: '100% Cotton Lawn',
-    care_instructions: 'Machine wash cold. Tumble dry low.',
-    details: 'Single shirt. Side slits with button detail. Straight-cut silhouette.',
+    tags: ['Lawn', 'Sage', 'Summer Edit'],
+    fabric: 'Pure Cotton Lawn & Voile',
+    care_instructions: 'Hand wash cold or gentle machine cycle. Iron inside out.',
+    details: 'Relaxed A-line silhouette with scalloped organza sleeves and straight pants.',
     display_order: 3,
     low_stock_threshold: 3,
-    created_at: fiveDaysAgo,
+    created_at: now,
     updated_at: now,
   },
-  // ── 4. Featured + Available (Casual) ──
   {
-    id: p4,
-    name: 'Sana Linen Co-ord Set',
-    slug: 'sana-linen-coord-set',
-    description: 'A relaxed linen co-ord set in earthy tones with hand-stitched accents.',
-    price: 5800,
-    compare_at_price: 6500,
-    category_id: catCasualId,
+    id: 'prod-elara-004',
+    name: 'Elara',
+    slug: 'elara',
+    description:
+      'Tailored with architectural restraint in deep charcoal black. This piece pairs clean silhouettes with purposeful artisan detailing along the neckline for quiet sophistication.',
+    price: 21000,
+    compare_at_price: null,
+    category_id: 'cat-winter-formals',
     status: 'active',
     is_published: true,
-    is_featured: true,
+    is_featured: false,
     is_preorder: false,
     preorder_closes_at: null,
     estimated_dispatch_date: null,
     preorder_limit: null,
-    tags: ['linen', 'casual', 'co-ord', 'summer'],
-    fabric: 'French Linen',
-    care_instructions: 'Hand wash recommended. Iron while damp.',
-    details: '2-piece set: oversized shirt and wide-leg trousers.',
+    tags: ['Charcoal', 'Winter Formals'],
+    fabric: 'Fine Wool-Silk Blend',
+    care_instructions: 'Dry clean only.',
+    details: 'Modest straight-cut shirt with tonal embroidery and tailored cigarette trousers.',
     display_order: 4,
     low_stock_threshold: 3,
-    created_at: fiveDaysAgo,
+    created_at: now,
     updated_at: now,
   },
-  // ── 5. Featured (Bridal) ──
   {
-    id: p5,
-    name: 'Mahira Bridal Lehenga',
-    slug: 'mahira-bridal-lehenga',
-    description: 'Show-stopping bridal lehenga with heavy zardozi work in royal maroon.',
-    price: 95000,
+    id: 'prod-zoya-005',
+    name: 'Zoya',
+    slug: 'zoya',
+    description:
+      'Handcrafted deep emerald ensemble accented with intricate zardozi motifs across the neckline and sleeves. Paired with a tissue organza dupatta for festive grandeur.',
+    price: 26500,
     compare_at_price: null,
-    category_id: catBridalId,
-    status: 'active',
-    is_published: true,
-    is_featured: true,
-    is_preorder: false,
-    preorder_closes_at: null,
-    estimated_dispatch_date: null,
-    preorder_limit: null,
-    tags: ['bridal', 'lehenga', 'zardozi', 'wedding'],
-    fabric: 'Pure Organza with Zardozi',
-    care_instructions: 'Professional dry clean only. Store flat in acid-free tissue.',
-    details: '3-piece: lehenga, blouse, dupatta. Hand-embroidered with gold zardozi and Swarovski crystals.',
-    display_order: 5,
-    low_stock_threshold: 2,
-    created_at: oneWeekAgo,
-    updated_at: now,
-  },
-  // ── 6. Pre-order (Bridal) ──
-  {
-    id: p6,
-    name: 'Anaya Velvet Shawl Set',
-    slug: 'anaya-velvet-shawl-set',
-    description: 'Winter bridal velvet shawl set with pearl embellishments. Made to order.',
-    price: 45000,
-    compare_at_price: null,
-    category_id: catBridalId,
+    category_id: 'cat-occasion-wear',
     status: 'active',
     is_published: true,
     is_featured: false,
     is_preorder: true,
     preorder_closes_at: null,
-    estimated_dispatch_date: twoMonthsFromNow,
-    preorder_limit: 20,
-    tags: ['bridal', 'velvet', 'winter', 'preorder'],
-    fabric: 'Silk Velvet',
+    estimated_dispatch_date: null,
+    preorder_limit: 15,
+    tags: ['Emerald', 'Occasion Wear', 'Pre-Order'],
+    fabric: 'Pure Raw Silk & Tissue Organza',
     care_instructions: 'Dry clean only.',
-    details: '3-piece: shirt, velvet shawl, jamawar trousers. Hand-applied pearl and sequin work.',
+    details: 'Includes embellished shirt, matching flared trousers, and finished dupatta.',
+    display_order: 5,
+    low_stock_threshold: 3,
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    id: 'prod-inaya-006',
+    name: 'Inaya',
+    slug: 'inaya',
+    description:
+      'A breathable summer coordinate ensemble cut from fine cotton silk in blush terracotta. Minimalist boat neck with understated stitch detailing and relaxed trousers.',
+    price: 13500,
+    compare_at_price: null,
+    category_id: 'cat-summer-edit',
+    status: 'active',
+    is_published: true,
+    is_featured: false,
+    is_preorder: false,
+    preorder_closes_at: null,
+    estimated_dispatch_date: null,
+    preorder_limit: null,
+    tags: ['Blush', 'Summer Edit'],
+    fabric: 'Cotton Silk Blend',
+    care_instructions: 'Gentle hand wash. Iron on low heat.',
+    details: 'Boxy relaxed tunic with matching wide-leg culottes.',
     display_order: 6,
     low_stock_threshold: 3,
-    created_at: twoDaysAgo,
-    updated_at: now,
-  },
-  // ── 7. Pre-order (Formal) ──
-  {
-    id: p7,
-    name: 'Hira Organza Ensemble',
-    slug: 'hira-organza-ensemble',
-    description: 'An ethereal organza outfit with French-knot embroidery. Pre-order exclusive.',
-    price: 24500,
-    compare_at_price: null,
-    category_id: catFormalId,
-    status: 'active',
-    is_published: true,
-    is_featured: false,
-    is_preorder: true,
-    preorder_closes_at: null,
-    estimated_dispatch_date: twoMonthsFromNow,
-    preorder_limit: 15,
-    tags: ['organza', 'formal', 'embroidered', 'preorder'],
-    fabric: 'Pure Organza',
-    care_instructions: 'Dry clean only. Handle with care.',
-    details: '3-piece stitched outfit. Hand-embroidered motifs in French-knot technique.',
-    display_order: 7,
-    low_stock_threshold: 3,
-    created_at: twoDaysAgo,
-    updated_at: now,
-  },
-  // ── 8. Out of Stock (Casual) ──
-  {
-    id: p8,
-    name: 'Fatima Printed Cambric',
-    slug: 'fatima-printed-cambric',
-    description: 'Vibrant cambric suit with bold geometric prints. Currently sold out.',
-    price: 3500,
-    compare_at_price: 4200,
-    category_id: catCasualId,
-    status: 'active',
-    is_published: true,
-    is_featured: false,
-    is_preorder: false,
-    preorder_closes_at: null,
-    estimated_dispatch_date: null,
-    preorder_limit: null,
-    tags: ['cambric', 'casual', 'printed', 'summer'],
-    fabric: 'Premium Cambric',
-    care_instructions: 'Machine wash cold. Do not bleach.',
-    details: '2-piece unstitched: shirt and trousers. Digital print.',
-    display_order: 8,
-    low_stock_threshold: 3,
-    created_at: oneWeekAgo,
-    updated_at: now,
-  },
-  // ── 9. Out of Stock (Accessories) ──
-  {
-    id: p9,
-    name: 'Rania Pearl Clutch',
-    slug: 'rania-pearl-clutch',
-    description: 'Hand-beaded pearl clutch bag. Sold out — restocking soon.',
-    price: 6800,
-    compare_at_price: null,
-    category_id: catAccessoriesId,
-    status: 'active',
-    is_published: true,
-    is_featured: false,
-    is_preorder: false,
-    preorder_closes_at: null,
-    estimated_dispatch_date: null,
-    preorder_limit: null,
-    tags: ['accessories', 'clutch', 'pearls', 'evening'],
-    fabric: 'Satin with Pearl Beading',
-    care_instructions: 'Wipe with soft cloth. Store in dust bag.',
-    details: 'Dimensions: 22cm x 12cm. Magnetic snap closure. Chain strap included.',
-    display_order: 9,
-    low_stock_threshold: 2,
-    created_at: oneWeekAgo,
-    updated_at: now,
-  },
-  // ── 10. Low Stock (Casual) ──
-  {
-    id: p10,
-    name: 'Maryam Pashmina Shawl',
-    slug: 'maryam-pashmina-shawl',
-    description: 'Ultra-soft pashmina shawl with delicate hand-embroidered border.',
-    price: 8900,
-    compare_at_price: 10000,
-    category_id: catAccessoriesId,
-    status: 'active',
-    is_published: true,
-    is_featured: false,
-    is_preorder: false,
-    preorder_closes_at: null,
-    estimated_dispatch_date: null,
-    preorder_limit: null,
-    tags: ['accessories', 'shawl', 'pashmina', 'winter'],
-    fabric: 'Pure Pashmina Wool',
-    care_instructions: 'Dry clean only. Store folded with mothballs.',
-    details: 'Dimensions: 200cm x 70cm. Hand-embroidered Kashmiri border.',
-    display_order: 10,
-    low_stock_threshold: 3,
-    created_at: fiveDaysAgo,
-    updated_at: now,
-  },
-  // ── 11. Low Stock (Accessories) ──
-  {
-    id: p11,
-    name: 'Ayesha Chiffon Dupatta Set',
-    slug: 'ayesha-chiffon-dupatta-set',
-    description: 'Set of two pure chiffon dupattas with hand-finished edges.',
-    price: 3200,
-    compare_at_price: null,
-    category_id: catAccessoriesId,
-    status: 'active',
-    is_published: true,
-    is_featured: false,
-    is_preorder: false,
-    preorder_closes_at: null,
-    estimated_dispatch_date: null,
-    preorder_limit: null,
-    tags: ['accessories', 'dupatta', 'chiffon', 'everyday'],
-    fabric: 'Pure Chiffon',
-    care_instructions: 'Hand wash cold. Air dry in shade.',
-    details: 'Set of 2 dupattas: ivory and blush pink. 2.5m each.',
-    display_order: 11,
-    low_stock_threshold: 3,
-    created_at: fiveDaysAgo,
-    updated_at: now,
-  },
-  // ── 12. Regular (Formal) ──
-  {
-    id: p12,
-    name: 'Layla Jacquard Three-Piece',
-    slug: 'layla-jacquard-three-piece',
-    description: 'Luxurious jacquard fabric with subtle self-print and silver detailing.',
-    price: 12800,
-    compare_at_price: 15000,
-    category_id: catFormalId,
-    status: 'active',
-    is_published: true,
-    is_featured: false,
-    is_preorder: false,
-    preorder_closes_at: null,
-    estimated_dispatch_date: null,
-    preorder_limit: null,
-    tags: ['jacquard', 'formal', 'three-piece', 'silver'],
-    fabric: 'Premium Jacquard',
-    care_instructions: 'Dry clean recommended. Iron on medium.',
-    details: '3-piece unstitched: shirt, dupatta, trousers. Self-print jacquard with silver screen-print border.',
-    display_order: 12,
-    low_stock_threshold: 3,
-    created_at: oneWeekAgo,
-    updated_at: now,
-  },
-  // ── 13. Draft / Unpublished (Casual) ──
-  {
-    id: p13,
-    name: 'Kiran Summer Kurti (Draft)',
-    slug: 'kiran-summer-kurti',
-    description: 'Lightweight summer kurti in pastel palette. Not yet published.',
-    price: 3800,
-    compare_at_price: null,
-    category_id: catCasualId,
-    status: 'draft',
-    is_published: false,
-    is_featured: false,
-    is_preorder: false,
-    preorder_closes_at: null,
-    estimated_dispatch_date: null,
-    preorder_limit: null,
-    tags: ['cotton', 'casual', 'summer', 'kurti'],
-    fabric: 'Lawn Cotton',
-    care_instructions: 'Machine washable.',
-    details: 'Single kurti. A-line cut. Coming soon.',
-    display_order: 13,
-    low_stock_threshold: 3,
-    created_at: twoDaysAgo,
-    updated_at: now,
-  },
-  // ── 14. Archived (Formal) ──
-  {
-    id: p14,
-    name: 'Meher Eid Collection (Archived)',
-    slug: 'meher-eid-collection',
-    description: 'Limited edition Eid collection. Season ended — archived.',
-    price: 16000,
-    compare_at_price: null,
-    category_id: catFormalId,
-    status: 'archived',
-    is_published: false,
-    is_featured: false,
-    is_preorder: false,
-    preorder_closes_at: null,
-    estimated_dispatch_date: null,
-    preorder_limit: null,
-    tags: ['formal', 'eid', 'limited-edition', 'archived'],
-    fabric: 'Silk Chiffon',
-    care_instructions: 'Dry clean only.',
-    details: '3-piece stitched. Discontinued seasonal item.',
-    display_order: 14,
-    low_stock_threshold: 3,
-    created_at: oneWeekAgo,
+    created_at: now,
     updated_at: now,
   },
 ];
 
-// ── Images ──
-
+// ── Up to 3 Product Images per dress (Section 6 & 17) ──
 export const seedImages: ProductImage[] = [
-  ...makeImages(p1, 1, 3),
-  ...makeImages(p2, 2, 3),
-  ...makeImages(p3, 3, 2),
-  ...makeImages(p4, 4, 3),
-  ...makeImages(p5, 5, 3),
-  ...makeImages(p6, 6, 2),
-  ...makeImages(p7, 7, 2),
-  ...makeImages(p8, 8, 2),
-  ...makeImages(p9, 9, 2),
-  ...makeImages(p10, 10, 2),
-  ...makeImages(p11, 11, 2),
-  ...makeImages(p12, 12, 3),
-  ...makeImages(p13, 13, 2),
-  ...makeImages(p14, 14, 2),
+  // Noor (Plum)
+  {
+    id: 'img-noor-1',
+    product_id: 'prod-noor-001',
+    url: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=900&q=85&auto=format&fit=crop',
+    storage_path: null,
+    alt_text: 'Noor — Embroidered Velvet Ensemble front view',
+    position: 0,
+  },
+  {
+    id: 'img-noor-2',
+    product_id: 'prod-noor-001',
+    url: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=900&q=85&auto=format&fit=crop',
+    storage_path: null,
+    alt_text: 'Noor — Close up embroidery detail',
+    position: 1,
+  },
+  {
+    id: 'img-noor-3',
+    product_id: 'prod-noor-001',
+    url: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=900&q=85&auto=format&fit=crop',
+    storage_path: null,
+    alt_text: 'Noor — Full silhouette drape',
+    position: 2,
+  },
+
+  // Mehr (Ivory)
+  {
+    id: 'img-mehr-1',
+    product_id: 'prod-mehr-002',
+    url: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=900&q=85&auto=format&fit=crop',
+    storage_path: null,
+    alt_text: 'Mehr — Pure Raw Silk Occasion Ensemble',
+    position: 0,
+  },
+  {
+    id: 'img-mehr-2',
+    product_id: 'prod-mehr-002',
+    url: 'https://images.unsplash.com/photo-1583391733981-8b530eaef1c1?w=900&q=85&auto=format&fit=crop',
+    storage_path: null,
+    alt_text: 'Mehr — Artisanal hand embroidery work',
+    position: 1,
+  },
+  {
+    id: 'img-mehr-3',
+    product_id: 'prod-mehr-002',
+    url: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=900&q=85&auto=format&fit=crop',
+    storage_path: null,
+    alt_text: 'Mehr — Dupatta styling',
+    position: 2,
+  },
+
+  // Aira (Sage)
+  {
+    id: 'img-aira-1',
+    product_id: 'prod-aira-003',
+    url: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=900&q=85&auto=format&fit=crop',
+    storage_path: null,
+    alt_text: 'Aira — Artisanal Summer Lawn',
+    position: 0,
+  },
+  {
+    id: 'img-aira-2',
+    product_id: 'prod-aira-003',
+    url: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=900&q=85&auto=format&fit=crop',
+    storage_path: null,
+    alt_text: 'Aira — Fabric texture & drape',
+    position: 1,
+  },
+  {
+    id: 'img-aira-3',
+    product_id: 'prod-aira-003',
+    url: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=900&q=85&auto=format&fit=crop',
+    storage_path: null,
+    alt_text: 'Aira — Summer lookbook',
+    position: 2,
+  },
+
+  // Elara (Charcoal)
+  {
+    id: 'img-elara-1',
+    product_id: 'prod-elara-004',
+    url: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=900&q=85&auto=format&fit=crop',
+    storage_path: null,
+    alt_text: 'Elara — Architectural Charcoal Formal',
+    position: 0,
+  },
+  {
+    id: 'img-elara-2',
+    product_id: 'prod-elara-004',
+    url: 'https://images.unsplash.com/photo-1558171813-4c088753af8f?w=900&q=85&auto=format&fit=crop',
+    storage_path: null,
+    alt_text: 'Elara — Minimalist finishings',
+    position: 1,
+  },
+
+  // Zoya (Emerald)
+  {
+    id: 'img-zoya-1',
+    product_id: 'prod-zoya-005',
+    url: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=900&q=85&auto=format&fit=crop',
+    storage_path: null,
+    alt_text: 'Zoya — Emerald Festive Raw Silk',
+    position: 0,
+  },
+  {
+    id: 'img-zoya-2',
+    product_id: 'prod-zoya-005',
+    url: 'https://images.unsplash.com/photo-1583391733981-8b530eaef1c1?w=900&q=85&auto=format&fit=crop',
+    storage_path: null,
+    alt_text: 'Zoya — Handcrafted details',
+    position: 1,
+  },
+
+  // Inaya (Blush)
+  {
+    id: 'img-inaya-1',
+    product_id: 'prod-inaya-006',
+    url: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=900&q=85&auto=format&fit=crop',
+    storage_path: null,
+    alt_text: 'Inaya — Terracotta Blush Coordinates',
+    position: 0,
+  },
+  {
+    id: 'img-inaya-2',
+    product_id: 'prod-inaya-006',
+    url: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=900&q=85&auto=format&fit=crop',
+    storage_path: null,
+    alt_text: 'Inaya — Relaxed modest fit',
+    position: 1,
+  },
 ];
 
-// ── Variants ──
-// Stock distribution: p8, p9 = 0 (out of stock), p10 = total 2 (low), p11 = total 3 (low)
-
+// ── Default S / M / L / XL Variants per Section 6 & 17 ──
 export const seedVariants: ProductVariant[] = [
-  // p1 — good stock
-  ...makeVariants(p1, { XS: 5, S: 10, M: 15, L: 8, XL: 3 }),
-  // p2 — good stock
-  ...makeVariants(p2, { XS: 8, S: 12, M: 10, L: 6, XL: 4 }),
-  // p3 — good stock
-  ...makeVariants(p3, { XS: 10, S: 15, M: 12, L: 8, XL: 5 }),
-  // p4 — good stock
-  ...makeVariants(p4, { XS: 6, S: 10, M: 14, L: 10, XL: 6 }),
-  // p5 — moderate stock (bridal, lower quantities)
-  ...makeVariants(p5, { XS: 2, S: 3, M: 4, L: 3, XL: 1 }),
-  // p6 — preorder, stock irrelevant but some present
-  ...makeVariants(p6, { XS: 0, S: 0, M: 0, L: 0, XL: 0 }),
-  // p7 — preorder, stock irrelevant
-  ...makeVariants(p7, { XS: 0, S: 0, M: 0, L: 0, XL: 0 }),
-  // p8 — out of stock (all 0)
-  ...makeVariants(p8, { XS: 0, S: 0, M: 0, L: 0, XL: 0 }),
-  // p9 — out of stock (all 0)
-  ...makeVariants(p9, { XS: 0, S: 0, M: 0, L: 0, XL: 0 }),
-  // p10 — low stock (total = 2)
-  ...makeVariants(p10, { XS: 0, S: 1, M: 1, L: 0, XL: 0 }),
-  // p11 — low stock (total = 3)
-  ...makeVariants(p11, { XS: 0, S: 1, M: 1, L: 1, XL: 0 }),
-  // p12 — good stock
-  ...makeVariants(p12, { XS: 4, S: 8, M: 12, L: 7, XL: 3 }),
-  // p13 — draft, some stock
-  ...makeVariants(p13, { XS: 5, S: 10, M: 10, L: 5, XL: 3 }),
-  // p14 — archived, had stock
-  ...makeVariants(p14, { XS: 2, S: 3, M: 1, L: 0, XL: 0 }),
+  // Noor
+  { id: 'var-noor-s', product_id: 'prod-noor-001', size: 'S', stock_quantity: 8, sku: 'SAN-NOOR-S' },
+  { id: 'var-noor-m', product_id: 'prod-noor-001', size: 'M', stock_quantity: 10, sku: 'SAN-NOOR-M' },
+  { id: 'var-noor-l', product_id: 'prod-noor-001', size: 'L', stock_quantity: 6, sku: 'SAN-NOOR-L' },
+  { id: 'var-noor-xl', product_id: 'prod-noor-001', size: 'XL', stock_quantity: 4, sku: 'SAN-NOOR-XL' },
+
+  // Mehr
+  { id: 'var-mehr-s', product_id: 'prod-mehr-002', size: 'S', stock_quantity: 5, sku: 'SAN-MEHR-S' },
+  { id: 'var-mehr-m', product_id: 'prod-mehr-002', size: 'M', stock_quantity: 7, sku: 'SAN-MEHR-M' },
+  { id: 'var-mehr-l', product_id: 'prod-mehr-002', size: 'L', stock_quantity: 4, sku: 'SAN-MEHR-L' },
+  { id: 'var-mehr-xl', product_id: 'prod-mehr-002', size: 'XL', stock_quantity: 2, sku: 'SAN-MEHR-XL' },
+
+  // Aira
+  { id: 'var-aira-s', product_id: 'prod-aira-003', size: 'S', stock_quantity: 6, sku: 'SAN-AIRA-S' },
+  { id: 'var-aira-m', product_id: 'prod-aira-003', size: 'M', stock_quantity: 8, sku: 'SAN-AIRA-M' },
+  { id: 'var-aira-l', product_id: 'prod-aira-003', size: 'L', stock_quantity: 5, sku: 'SAN-AIRA-L' },
+  { id: 'var-aira-xl', product_id: 'prod-aira-003', size: 'XL', stock_quantity: 3, sku: 'SAN-AIRA-XL' },
+
+  // Elara
+  { id: 'var-elara-s', product_id: 'prod-elara-004', size: 'S', stock_quantity: 4, sku: 'SAN-ELARA-S' },
+  { id: 'var-elara-m', product_id: 'prod-elara-004', size: 'M', stock_quantity: 6, sku: 'SAN-ELARA-M' },
+  { id: 'var-elara-l', product_id: 'prod-elara-004', size: 'L', stock_quantity: 3, sku: 'SAN-ELARA-L' },
+  { id: 'var-elara-xl', product_id: 'prod-elara-004', size: 'XL', stock_quantity: 2, sku: 'SAN-ELARA-XL' },
+
+  // Zoya
+  { id: 'var-zoya-s', product_id: 'prod-zoya-005', size: 'S', stock_quantity: 5, sku: 'SAN-ZOYA-S' },
+  { id: 'var-zoya-m', product_id: 'prod-zoya-005', size: 'M', stock_quantity: 5, sku: 'SAN-ZOYA-M' },
+  { id: 'var-zoya-l', product_id: 'prod-zoya-005', size: 'L', stock_quantity: 4, sku: 'SAN-ZOYA-L' },
+  { id: 'var-zoya-xl', product_id: 'prod-zoya-005', size: 'XL', stock_quantity: 3, sku: 'SAN-ZOYA-XL' },
+
+  // Inaya
+  { id: 'var-inaya-s', product_id: 'prod-inaya-006', size: 'S', stock_quantity: 7, sku: 'SAN-INAYA-S' },
+  { id: 'var-inaya-m', product_id: 'prod-inaya-006', size: 'M', stock_quantity: 9, sku: 'SAN-INAYA-M' },
+  { id: 'var-inaya-l', product_id: 'prod-inaya-006', size: 'L', stock_quantity: 4, sku: 'SAN-INAYA-L' },
+  { id: 'var-inaya-xl', product_id: 'prod-inaya-006', size: 'XL', stock_quantity: 2, sku: 'SAN-INAYA-XL' },
 ];
 
-// ── Seed Orders ──
-
-function buildOrder(
-  seq: number,
-  name: string,
-  email: string,
-  phone: string,
-  city: string,
-  items: Omit<OrderItem, 'order_id'>[],
-  overrides: Partial<Order> = {},
-): { order: Order; items: OrderItem[] } {
-  const orderId = crypto.randomUUID();
-  const subtotal = items.reduce((s, i) => s + i.unit_price * i.quantity, 0);
-  const shippingFee = subtotal >= 5000 ? 0 : 250;
-
-  const order: Order = {
-    id: orderId,
-    order_number: `SNT-${String(seq).padStart(6, '0')}`,
-    customer_name: name,
-    email,
-    phone,
+// ── Sample Initial Orders ──
+export const seedOrders: Order[] = [
+  {
+    id: 'ord-1001',
+    order_number: 'SAN-10481',
+    customer_name: 'Amina Tariq',
+    email: 'amina.t@example.com',
+    phone: '03008451234',
     shipping_address: {
-      line1: '123 Demo Street',
-      city,
+      line1: 'House 42-B, Sector Y, DHA Phase 3',
+      city: 'Lahore',
       province: 'Punjab',
-      postal_code: '54000',
+      postal_code: '54792',
       country: 'Pakistan',
     },
-    subtotal,
-    shipping_fee: shippingFee,
-    total: subtotal + shippingFee,
-    order_type: 'standard',
+    subtotal: 18500,
+    shipping_fee: 250, // Punjab: Rs. 250
+    total: 18750,
+    order_type: 'preorder',
     status: 'new',
     payment_method: 'cod',
     payment_status: 'pending',
-    notes: null,
-    created_at: twoDaysAgo,
-    updated_at: twoDaysAgo,
-    ...overrides,
-  };
-
-  const orderItems: OrderItem[] = items.map((item) => ({
-    ...item,
-    order_id: orderId,
-  }));
-
-  return { order, items: orderItems };
-}
-
-// Get variant IDs for order items
-const p1Variants = seedVariants.filter((v) => v.product_id === p1);
-const p2Variants = seedVariants.filter((v) => v.product_id === p2);
-const p3Variants = seedVariants.filter((v) => v.product_id === p3);
-const p5Variants = seedVariants.filter((v) => v.product_id === p5);
-const p12Variants = seedVariants.filter((v) => v.product_id === p12);
-
-const order1 = buildOrder(
-  1,
-  'Amna Khalid',
-  'amna.khalid@demo.test',
-  '+923001234567',
-  'Lahore',
-  [
-    {
-      id: crypto.randomUUID(),
-      product_id: p1,
-      variant_id: p1Variants.find((v) => v.size === 'M')!.id,
-      product_name_snapshot: 'Noor Silk Formal',
-      size: 'M',
-      unit_price: 18500,
-      quantity: 1,
-      image_url_snapshot: placeholder('Demo+Product+01+Front'),
+    notes: 'Please call before delivery.',
+    created_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+  },
+  {
+    id: 'ord-1002',
+    order_number: 'SAN-10482',
+    customer_name: 'Zainab Qureshi',
+    email: 'zainab.q@example.com',
+    phone: '03219876543',
+    shipping_address: {
+      line1: 'Apartment 402, Clifton Block 5',
+      city: 'Karachi',
+      province: 'Sindh',
+      postal_code: '75600',
+      country: 'Pakistan',
     },
-  ],
-  { status: 'confirmed', payment_status: 'paid', payment_method: 'bank_transfer' },
-);
-
-const order2 = buildOrder(
-  2,
-  'Sara Ahmed',
-  'sara.ahmed@demo.test',
-  '+923009876543',
-  'Karachi',
-  [
-    {
-      id: crypto.randomUUID(),
-      product_id: p2,
-      variant_id: p2Variants.find((v) => v.size === 'S')!.id,
-      product_name_snapshot: 'Zara Embroidered Lawn Suit',
-      size: 'S',
-      unit_price: 7500,
-      quantity: 1,
-      image_url_snapshot: placeholder('Demo+Product+02+Front'),
-    },
-    {
-      id: crypto.randomUUID(),
-      product_id: p3,
-      variant_id: p3Variants.find((v) => v.size === 'M')!.id,
-      product_name_snapshot: 'Aisha Cotton Kurta',
-      size: 'M',
-      unit_price: 4200,
-      quantity: 2,
-      image_url_snapshot: placeholder('Demo+Product+03+Front'),
-    },
-  ],
-  { status: 'processing' },
-);
-
-const order3 = buildOrder(
-  3,
-  'Zainab Hassan',
-  'zainab.hassan@demo.test',
-  '+923335551234',
-  'Islamabad',
-  [
-    {
-      id: crypto.randomUUID(),
-      product_id: p5,
-      variant_id: p5Variants.find((v) => v.size === 'S')!.id,
-      product_name_snapshot: 'Mahira Bridal Lehenga',
-      size: 'S',
-      unit_price: 95000,
-      quantity: 1,
-      image_url_snapshot: placeholder('Demo+Product+05+Front'),
-    },
-  ],
-  { status: 'dispatched', payment_status: 'paid', payment_method: 'online' },
-);
-
-const order4 = buildOrder(
-  4,
-  'Hina Tariq',
-  'hina.tariq@demo.test',
-  '+923211112222',
-  'Faisalabad',
-  [
-    {
-      id: crypto.randomUUID(),
-      product_id: p12,
-      variant_id: p12Variants.find((v) => v.size === 'L')!.id,
-      product_name_snapshot: 'Layla Jacquard Three-Piece',
-      size: 'L',
-      unit_price: 12800,
-      quantity: 1,
-      image_url_snapshot: placeholder('Demo+Product+12+Front'),
-    },
-  ],
-  { status: 'new' },
-);
-
-const order5 = buildOrder(
-  5,
-  'Nadia Malik',
-  'nadia.malik@demo.test',
-  '+923451231234',
-  'Rawalpindi',
-  [
-    {
-      id: crypto.randomUUID(),
-      product_id: p3,
-      variant_id: p3Variants.find((v) => v.size === 'L')!.id,
-      product_name_snapshot: 'Aisha Cotton Kurta',
-      size: 'L',
-      unit_price: 4200,
-      quantity: 1,
-      image_url_snapshot: placeholder('Demo+Product+03+Front'),
-    },
-  ],
-  { status: 'cancelled' },
-);
-
-export const seedOrders: Order[] = [
-  order1.order,
-  order2.order,
-  order3.order,
-  order4.order,
-  order5.order,
+    subtotal: 24000,
+    shipping_fee: 350, // Outside Punjab: Rs. 350
+    total: 24350,
+    order_type: 'standard',
+    status: 'processing',
+    payment_method: 'jazzcash' as any,
+    payment_status: 'paid',
+    notes: 'Paid via JazzCash to Sara Ahmed (03424786076). Screenshot verified.',
+    created_at: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - 12 * 3600 * 1000).toISOString(),
+  },
 ];
 
 export const seedOrderItems: OrderItem[] = [
-  ...order1.items,
-  ...order2.items,
-  ...order3.items,
-  ...order4.items,
-  ...order5.items,
+  {
+    id: 'item-1001-1',
+    order_id: 'ord-1001',
+    product_id: 'prod-noor-001',
+    variant_id: 'var-noor-m',
+    product_name_snapshot: 'Noor',
+    size: 'M',
+    unit_price: 18500,
+    quantity: 1,
+    image_url_snapshot: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=900&q=85&auto=format&fit=crop',
+  },
+  {
+    id: 'item-1002-1',
+    order_id: 'ord-1002',
+    product_id: 'prod-mehr-002',
+    variant_id: 'var-mehr-s',
+    product_name_snapshot: 'Mehr',
+    size: 'S',
+    unit_price: 24000,
+    quantity: 1,
+    image_url_snapshot: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=900&q=85&auto=format&fit=crop',
+  },
 ];

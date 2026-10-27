@@ -87,7 +87,7 @@ export function ShopPage() {
               onChange={(e) => handleCategoryChange(e.target.value)}
               className="text-xs h-9 py-1"
             >
-              <option value="">All Categories</option>
+              <option value="">All Collections</option>
               {categories?.map((cat) => (
                 <option key={cat.id} value={cat.slug}>
                   {cat.name}

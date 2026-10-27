@@ -66,7 +66,7 @@ export function CategoryPage() {
       {/* Category Header */}
       <div className="text-center max-w-2xl mx-auto mb-12">
         <span className="text-[11px] uppercase tracking-[0.3em] text-plum font-sans font-medium">
-          Category
+          Collection
         </span>
         <h1 className="text-3xl sm:text-5xl font-serif tracking-wide text-black mt-1 mb-3">
           {category.name}

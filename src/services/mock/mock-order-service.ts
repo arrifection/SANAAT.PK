@@ -1,5 +1,6 @@
 // ──────────────────────────────────────────────
 // SANAAT — Mock Order Service
+// Province-based shipping: Punjab Rs. 250, Outside Punjab Rs. 350
 // ──────────────────────────────────────────────
 
 import type { OrderService } from '../interfaces';
@@ -12,19 +13,23 @@ import type {
   CheckoutData,
   Product,
   ProductVariant,
+  ProductImage,
 } from '../../types';
 import { isVariantPurchasable } from '../../utils/stock';
 import { generateId, generateOrderNumber } from '../../utils';
+import { calculateShippingFee } from '../../content/site-config';
 
-const delay = () => new Promise<void>((r) => setTimeout(r, 100));
+const delay = () => new Promise<void>((r) => setTimeout(r, 80));
 
 export function createMockOrderService(
   orders: Order[],
   orderItems: OrderItem[],
   products: Product[],
   variants: ProductVariant[],
+  images: ProductImage[] = [],
+  onMutation?: () => void
 ): OrderService {
-  let orderSequence = orders.length;
+  let orderSequence = orders.length + 10480;
 
   function hydrateOrder(order: Order): OrderWithItems {
     return {
@@ -58,61 +63,62 @@ export function createMockOrderService(
         // For non-preorder, check stock
         if (!product.is_preorder && variant.stock_quantity < item.quantity) {
           throw new Error(
-            `Insufficient stock for ${product.name} (${variant.size}): requested ${item.quantity}, available ${variant.stock_quantity}`,
+            `Insufficient stock for ${product.name} (${variant.size}): requested ${item.quantity}, available ${variant.stock_quantity}`
           );
         }
 
         resolvedItems.push({ product, variant, quantity: item.quantity });
       }
 
-      // Calculate prices from product data (never trust client prices)
-      const lineItems: OrderItem[] = resolvedItems.map(({ product, variant, quantity }) => {
-        const firstImage = product.id
-          ? undefined // We'll look it up below
-          : undefined;
+      orderSequence += 1;
+      const orderId = generateId();
+      const orderNumber = generateOrderNumber(orderSequence);
 
-        // Find first image for this product
-        const imageUrl =
-          firstImage ?? null;
+      // Construct line items
+      const lineItems: OrderItem[] = resolvedItems.map(({ product, variant, quantity }) => {
+        const firstImg = images.find((img) => img.product_id === product.id && img.position === 0) ||
+          images.find((img) => img.product_id === product.id);
 
         return {
           id: generateId(),
-          order_id: '', // Set below
+          order_id: orderId,
           product_id: product.id,
           variant_id: variant.id,
           product_name_snapshot: product.name,
           size: variant.size,
           unit_price: product.price,
           quantity,
-          image_url_snapshot: imageUrl,
+          image_url_snapshot: firstImg ? firstImg.url : null,
         };
       });
 
       const subtotal = lineItems.reduce((s, i) => s + i.unit_price * i.quantity, 0);
-      const shippingFee = subtotal >= 5000 ? 0 : 250;
+
+      // Section 8: Punjab = Rs. 250, Outside Punjab = Rs. 350
+      const province = data.shipping_address?.province || 'Punjab';
+      const shippingFee = calculateShippingFee(province);
+      const total = subtotal + shippingFee;
+
       const hasPreorder = resolvedItems.some(({ product }) => product.is_preorder);
 
-      orderSequence += 1;
-      const orderId = generateId();
-      const orderNumber = generateOrderNumber(orderSequence);
-
+      const now = new Date().toISOString();
       const order: Order = {
         id: orderId,
         order_number: orderNumber,
         customer_name: data.customer_name,
-        email: data.email,
+        email: data.email || 'customer@sanaat.pk',
         phone: data.phone,
         shipping_address: data.shipping_address,
         subtotal,
         shipping_fee: shippingFee,
-        total: subtotal + shippingFee,
+        total,
         order_type: hasPreorder ? 'preorder' : 'standard',
         status: 'new',
         payment_method: data.payment_method,
         payment_status: 'pending',
         notes: data.notes ?? null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: now,
+        updated_at: now,
       };
 
       // Decrement stock for non-preorder items
@@ -122,20 +128,29 @@ export function createMockOrderService(
         }
       }
 
-      // Assign order_id and persist
-      for (const item of lineItems) {
-        item.order_id = orderId;
-      }
-
-      orders.push(order);
+      orders.unshift(order);
       orderItems.push(...lineItems);
 
-      return { order_number: orderNumber };
+      onMutation?.();
+
+      return {
+        order_id: order.id,
+        order_number: order.order_number,
+        total: order.total,
+      };
     },
 
     async getOrderByNumber(orderNumber: string) {
       await delay();
-      const order = orders.find((o) => o.order_number === orderNumber);
+      const order = orders.find(
+        (o) => o.order_number.toUpperCase() === orderNumber.toUpperCase()
+      );
+      return order ? hydrateOrder(order) : null;
+    },
+
+    async getOrderById(id: string) {
+      await delay();
+      const order = orders.find((o) => o.id === id);
       return order ? hydrateOrder(order) : null;
     },
 
@@ -152,13 +167,13 @@ export function createMockOrderService(
       }
 
       if (filters.search) {
-        const q = filters.search.toLowerCase();
+        const query = filters.search.toLowerCase();
         result = result.filter(
           (o) =>
-            o.order_number.toLowerCase().includes(q) ||
-            o.customer_name.toLowerCase().includes(q) ||
-            o.email.toLowerCase().includes(q) ||
-            o.phone.includes(q),
+            o.order_number.toLowerCase().includes(query) ||
+            o.customer_name.toLowerCase().includes(query) ||
+            o.phone.includes(query) ||
+            o.email.toLowerCase().includes(query)
         );
       }
 
@@ -166,25 +181,13 @@ export function createMockOrderService(
       result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       const page = filters.page ?? 1;
-      const limit = filters.limit ?? 20;
+      const limit = filters.limit ?? 50;
       const total = result.length;
-      const totalPages = Math.max(1, Math.ceil(total / limit));
-      const safePage = Math.min(Math.max(1, page), totalPages);
-      const start = (safePage - 1) * limit;
+      const totalPages = Math.ceil(total / limit) || 1;
+      const offset = (page - 1) * limit;
+      const data = result.slice(offset, offset + limit).map(hydrateOrder);
 
-      return {
-        data: result.slice(start, start + limit).map(hydrateOrder),
-        total,
-        page: safePage,
-        limit,
-        totalPages,
-      };
-    },
-
-    async getOrderById(id: string) {
-      await delay();
-      const order = orders.find((o) => o.id === id);
-      return order ? hydrateOrder(order) : null;
+      return { data, total, page, limit, totalPages };
     },
 
     async updateOrderStatus(id: string, status: OrderStatus) {
@@ -193,7 +196,8 @@ export function createMockOrderService(
       if (!order) throw new Error(`Order not found: ${id}`);
       order.status = status;
       order.updated_at = new Date().toISOString();
-      return { ...order };
+      onMutation?.();
+      return hydrateOrder(order);
     },
   };
 

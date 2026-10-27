@@ -8,7 +8,10 @@ import { generateId } from '../../utils';
 
 const delay = () => new Promise<void>((r) => setTimeout(r, 60));
 
-export function createMockCategoryService(categories: Category[]): CategoryService {
+export function createMockCategoryService(
+  categories: Category[],
+  onMutation?: () => void
+): CategoryService {
   const service: CategoryService = {
     async getActiveCategories() {
       await delay();
@@ -35,6 +38,7 @@ export function createMockCategoryService(categories: Category[]): CategoryServi
         created_at: new Date().toISOString(),
       };
       categories.push(category);
+      onMutation?.();
       return category;
     },
 
@@ -43,6 +47,7 @@ export function createMockCategoryService(categories: Category[]): CategoryServi
       const idx = categories.findIndex((c) => c.id === id);
       if (idx === -1) throw new Error(`Category not found: ${id}`);
       categories[idx] = { ...categories[idx], ...data };
+      onMutation?.();
       return categories[idx];
     },
 
@@ -51,6 +56,7 @@ export function createMockCategoryService(categories: Category[]): CategoryServi
       const idx = categories.findIndex((c) => c.id === id);
       if (idx === -1) throw new Error(`Category not found: ${id}`);
       categories.splice(idx, 1);
+      onMutation?.();
     },
   };
 

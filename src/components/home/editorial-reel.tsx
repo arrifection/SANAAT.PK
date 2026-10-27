@@ -1,36 +1,37 @@
-import { editorialReelContent } from '../../content/site-content';
+import { editorialStrip } from '../../content/site-content';
 import { SafeImage } from '../common';
 
 export function EditorialReel() {
   return (
-    <section className="py-16 md:py-24 bg-gray-50 overflow-hidden">
+    <section className="py-14 sm:py-20 bg-gray-50/70 border-y border-gray-100 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-10">
-          <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-plum">
-            Visual Journal
+        {/* Subtle Editorial Header */}
+        <div className="text-center mb-8 sm:mb-12">
+          <span className="text-[10px] sm:text-[11px] font-sans font-medium uppercase tracking-[0.3em] text-plum block">
+            Campaign Editorial
           </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif tracking-wide text-black mt-2">
-            {editorialReelContent.heading}
+          <h2 className="text-2xl sm:text-3xl font-serif text-black tracking-wide mt-1.5">
+            The Sanaat Edit
           </h2>
-          <p className="text-xs uppercase tracking-widest text-gray-500 mt-1">
-            Follow our journey @sanaat.pk
-          </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {editorialReelContent.images.map((item, idx) => (
+        {/* Clean Editorial Images Grid - Editorial Fashion Campaign feel */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+          {editorialStrip.images.map((item, idx) => (
             <div
               key={idx}
-              className="group relative aspect-[9/16] overflow-hidden bg-gray-200 shadow-sm"
+              className="group relative aspect-[3/4] overflow-hidden bg-gray-200"
             >
               <SafeImage
                 src={item.url}
-                alt={item.alt}
+                alt={item.title}
                 className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                loading="lazy"
               />
-              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <span className="text-xs font-sans tracking-widest uppercase text-white bg-black/60 px-3 py-1.5 backdrop-blur-sm">
-                  View Story
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+              <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 text-white">
+                <span className="text-[10px] sm:text-xs font-serif tracking-widest uppercase">
+                  {item.title}
                 </span>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import { AnnouncementBar, Header, Footer } from '../components/layout';
+import { AnnouncementBar, Header, Footer, FloatingWhatsApp } from '../components/layout';
 import { CartDrawer } from '../components/cart';
 
 export function StoreLayout() {
@@ -12,6 +12,7 @@ export function StoreLayout() {
       </main>
       <Footer />
       <CartDrawer />
+      <FloatingWhatsApp />
     </div>
   );
 }

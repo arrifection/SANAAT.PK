@@ -3,8 +3,8 @@ import { useOrderByNumber } from '../hooks/use-orders';
 import { formatPrice } from '../utils';
 import { Button, Skeleton } from '../components/ui';
 import { SEO, EmptyState, SafeImage } from '../components/common';
-import { CheckCircle2, PackageCheck, MessageSquare } from 'lucide-react';
-import { WHATSAPP_NUMBER } from '../content/site-config';
+import { CheckCircle2, PackageCheck, MessageSquare, ArrowRight } from 'lucide-react';
+import { JAZZCASH_INFO, CONTACT_INFO } from '../content/site-config';
 
 export function OrderConfirmationPage() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
@@ -35,10 +35,15 @@ export function OrderConfirmationPage() {
     );
   }
 
+  const isJazzCash = (order.payment_method as string) === 'jazzcash';
+  const whatsappReceiptUrl = `https://wa.me/${CONTACT_INFO.whatsappNumber}?text=${encodeURIComponent(
+    `Hello Sanaat, here is my JazzCash payment confirmation for Order ${order.order_number}. Total: Rs. ${order.total}`
+  )}`;
+
   return (
     <div className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto">
       <SEO
-        title={`Order Confirmed: ${order.order_number} | SANAAT`}
+        title={`Order Received: ${order.order_number} | SANAAT`}
         description="Your SANAAT fashion order has been received and confirmed."
       />
 
@@ -48,145 +53,136 @@ export function OrderConfirmationPage() {
           <CheckCircle2 className="w-10 h-10 stroke-[1.5]" />
         </div>
         <span className="text-[11px] uppercase tracking-[0.3em] text-plum font-sans font-semibold">
-          Order Confirmed
+          Order Received
         </span>
-        <h1 className="text-3xl sm:text-4xl font-serif text-black mt-1 mb-2">
+        <h1 className="text-3xl sm:text-4xl font-serif text-black mt-1 mb-2 font-normal">
           Thank you, {order.customer_name.split(' ')[0]}
         </h1>
-        <p className="text-xs sm:text-sm text-gray-600 font-sans max-w-md mx-auto">
-          We have received your order. A confirmation email with receipt and tracking details will be sent to{' '}
-          <strong className="text-black font-semibold">{order.email}</strong>.
+        <p className="text-xs sm:text-sm text-gray-600 font-sans max-w-md mx-auto font-light">
+          We have received your order. We will reach out to you via call or WhatsApp at{' '}
+          <strong className="text-black font-semibold">{order.phone}</strong> before dispatch.
         </p>
 
-        <div className="inline-block mt-4 px-4 py-2 bg-gray-50 border border-gray-200">
-          <span className="text-xs uppercase tracking-widest text-gray-500">Order Number: </span>
-          <span className="text-sm font-mono font-bold text-black ml-1">{order.order_number}</span>
+        <div className="inline-block mt-4 px-4 py-2.5 bg-gray-50 border border-gray-200">
+          <span className="text-xs uppercase tracking-widest text-gray-500 font-sans">Order Number: </span>
+          <span className="text-sm font-mono font-bold text-plum ml-1">{order.order_number}</span>
         </div>
       </div>
 
-      {/* Payment Instruction Notice */}
-      {order.payment_method === 'bank_transfer' && (
-        <div className="mb-8 p-6 bg-plum/5 border border-plum/30 space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-plum">
-            Bank Transfer Details (IBFT)
+      {/* JazzCash Payment Instructions (Section 14) */}
+      {isJazzCash && (
+        <div className="mb-8 p-6 bg-plum/5 border border-plum/30 space-y-4">
+          <h3 className="text-xs font-sans font-semibold uppercase tracking-wider text-plum">
+            JazzCash Payment Instructions
           </h3>
-          <p className="text-xs text-gray-700 leading-relaxed">
-            Please transfer <strong>{formatPrice(order.total)}</strong> to our official account:
+          <p className="text-xs font-sans text-gray-700 leading-relaxed font-light">
+            Please transfer the total amount of <strong className="font-semibold text-black">{formatPrice(order.total)}</strong> to our official JazzCash account:
           </p>
-          <div className="text-xs font-mono bg-white p-3 border border-gray-200 space-y-1">
-            <p>Bank: <strong>Meezan Bank Ltd</strong></p>
-            <p>Title: <strong>SANAAT STUDIO</strong></p>
-            <p>IBAN: <strong>PK44MEZN0001234567890123</strong></p>
+          <div className="text-xs font-mono bg-white p-4 border border-gray-200 space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Account Name:</span>
+              <strong className="text-black font-semibold">{JAZZCASH_INFO.accountName}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">JazzCash Number:</span>
+              <strong className="text-plum text-sm">{JAZZCASH_INFO.accountNumber}</strong>
+            </div>
           </div>
-          <p className="text-xs text-gray-600">
-            Share payment screenshot via WhatsApp at{' '}
+          <div className="pt-1">
             <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=Payment%20Screenshot%20for%20Order%20${order.order_number}`}
+              href={whatsappReceiptUrl}
               target="_blank"
-              rel="noreferrer"
-              className="text-plum font-semibold underline inline-flex items-center gap-1"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 bg-plum hover:bg-plum/90 text-white px-5 py-2.5 text-xs font-sans uppercase tracking-widest transition-colors w-full sm:w-auto"
             >
-              <MessageSquare className="w-3.5 h-3.5 inline" />
-              +{WHATSAPP_NUMBER}
+              <MessageSquare className="w-4 h-4" />
+              <span>Share Payment Screenshot on WhatsApp</span>
             </a>
-          </p>
+          </div>
         </div>
       )}
 
-      {order.payment_method === 'cod' && (
+      {/* Cash on Delivery Notice */}
+      {!isJazzCash && (
         <div className="mb-8 p-4 bg-gray-50 border border-gray-200 flex items-start gap-3 text-xs text-gray-700">
           <PackageCheck className="w-5 h-5 text-plum flex-shrink-0 mt-0.5" />
           <div>
             <span className="font-semibold text-black uppercase tracking-wider block mb-0.5">
-              Cash on Delivery Selected
+              Cash on Delivery Confirmed
             </span>
-            <span>
-              Please have exact cash amount of <strong>{formatPrice(order.total)}</strong> ready for the courier upon arrival.
-            </span>
+            <p className="text-gray-600 font-light">
+              Please have exact cash amount of <strong>{formatPrice(order.total)}</strong> ready upon delivery by the courier.
+            </p>
           </div>
         </div>
       )}
 
       {/* Order Details Card */}
-      <div className="bg-white border border-gray-200 p-6 sm:p-8 space-y-6">
-        <h2 className="text-sm font-serif font-semibold text-black uppercase tracking-wider border-b border-gray-200 pb-3">
-          Order Summary
-        </h2>
-
-        {/* Items */}
-        <div className="divide-y divide-gray-100">
-          {order.items.map((item) => (
-            <div key={item.id} className="py-4 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-14 h-18 bg-gray-50 overflow-hidden flex-shrink-0">
-                  <SafeImage
-                    src={item.image_url_snapshot}
-                    alt={item.product_name_snapshot}
-                    className="w-full h-full object-cover"
-                  />
+      <div className="bg-white border border-gray-200 divide-y divide-gray-100 mb-8">
+        <div className="p-4 sm:p-5">
+          <h2 className="text-xs font-sans font-semibold uppercase tracking-wider text-black">
+            Ordered Items ({order.items.length})
+          </h2>
+          <div className="divide-y divide-gray-100 mt-3">
+            {order.items.map((item) => (
+              <div key={item.id} className="py-3 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-16 bg-gray-50 border border-gray-200 overflow-hidden flex-shrink-0">
+                    <SafeImage
+                      src={item.image_url_snapshot}
+                      alt={item.product_name_snapshot}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-serif font-medium text-black">
+                      {item.product_name_snapshot}
+                    </h4>
+                    <p className="text-[11px] font-sans text-gray-500 uppercase mt-0.5">
+                      Size: <strong className="text-black font-semibold">{item.size}</strong> · Qty: {item.quantity}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs sm:text-sm font-serif text-black">
-                    {item.product_name_snapshot}
-                  </h4>
-                  <p className="text-[11px] text-gray-500 uppercase">
-                    Size: {item.size} · Qty: {item.quantity}
-                  </p>
+                <div className="font-serif font-medium text-black text-sm">
+                  {formatPrice(item.unit_price * item.quantity)}
                 </div>
               </div>
-
-              <div className="text-xs font-semibold text-black font-serif">
-                {formatPrice(item.unit_price * item.quantity)}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* Address and Financials Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-gray-200 text-xs">
-          <div>
-            <span className="uppercase tracking-wider font-semibold text-gray-400 block mb-2 font-sans">
-              Shipping Destination
-            </span>
-            <div className="text-gray-700 space-y-0.5">
-              <p className="font-medium text-black">{order.customer_name}</p>
-              <p>{order.shipping_address.line1}</p>
-              {order.shipping_address.line2 && <p>{order.shipping_address.line2}</p>}
-              <p>
-                {order.shipping_address.city}, {order.shipping_address.province} {order.shipping_address.postal_code}
-              </p>
-              <p>{order.shipping_address.country}</p>
-              <p className="pt-1 text-gray-500">Phone: {order.phone}</p>
-            </div>
+        {/* Pricing Summary */}
+        <div className="p-4 sm:p-5 bg-gray-50/50 space-y-2 text-xs font-sans">
+          <div className="flex justify-between text-gray-600">
+            <span>Subtotal</span>
+            <span className="font-medium text-black">{formatPrice(order.subtotal)}</span>
           </div>
+          <div className="flex justify-between text-gray-600">
+            <span>Shipping ({order.shipping_address.province})</span>
+            <span className="font-medium text-black">{formatPrice(order.shipping_fee)}</span>
+          </div>
+          <div className="flex justify-between text-sm font-bold text-black border-t border-gray-200 pt-2.5">
+            <span>Total</span>
+            <span className="font-serif text-base text-plum">{formatPrice(order.total)}</span>
+          </div>
+        </div>
 
-          <div className="space-y-2">
-            <span className="uppercase tracking-wider font-semibold text-gray-400 block mb-2 font-sans">
-              Financial Breakdown
-            </span>
-            <div className="flex justify-between text-gray-600">
-              <span>Subtotal</span>
-              <span className="text-black font-medium">{formatPrice(order.subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-gray-600">
-              <span>Shipping Fee</span>
-              <span className="text-black font-medium">
-                {order.shipping_fee === 0 ? 'Free' : formatPrice(order.shipping_fee)}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm font-semibold text-black border-t border-gray-200 pt-2">
-              <span>Grand Total</span>
-              <span className="font-serif text-base">{formatPrice(order.total)}</span>
-            </div>
-          </div>
+        {/* Shipping Address */}
+        <div className="p-4 sm:p-5 text-xs font-sans text-gray-600 space-y-1">
+          <span className="font-semibold text-black uppercase tracking-wider block mb-1">
+            Shipping Destination:
+          </span>
+          <p>{order.shipping_address.line1}</p>
+          <p>{order.shipping_address.city}, {order.shipping_address.province}</p>
+          <p>Contact: {order.phone}</p>
         </div>
       </div>
 
-      {/* Action Footer */}
-      <div className="mt-8 text-center space-y-3">
+      <div className="text-center">
         <Link to="/shop">
-          <Button variant="secondary" size="lg" className="text-xs tracking-widest px-8">
-            CONTINUE SHOPPING
+          <Button variant="secondary" size="md" className="text-xs uppercase tracking-widest font-sans">
+            <span>CONTINUE SHOPPING</span>
+            <ArrowRight className="w-3.5 h-3.5 ml-1.5 inline" />
           </Button>
         </Link>
       </div>

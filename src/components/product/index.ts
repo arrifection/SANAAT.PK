@@ -4,3 +4,4 @@ export * from './size-selector';
 export * from './quantity-selector';
 export * from './stock-badge';
 export * from './quick-view';
+export * from './size-chart-modal';

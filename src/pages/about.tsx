@@ -33,7 +33,7 @@ export function AboutPage() {
 
       {/* Editorial Body */}
       <div className="max-w-3xl mx-auto space-y-6 text-base sm:text-lg font-serif text-gray-800 leading-relaxed">
-        {aboutContent.paragraphs.map((p, idx) => (
+        {aboutContent.paragraphs.map((p: string, idx: number) => (
           <p key={idx} className={idx === 0 ? 'text-xl sm:text-2xl font-light italic text-black' : ''}>
             {p}
           </p>
@@ -56,7 +56,7 @@ export function AboutPage() {
           Our Guiding Principles
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {aboutContent.values.map((v, i) => (
+          {aboutContent.values.map((v: { heading: string; body: string }, i: number) => (
             <div key={i} className="p-6 border border-gray-100 bg-white space-y-3">
               <span className="text-xs uppercase tracking-widest text-gray-400 font-mono">
                 0{i + 1}

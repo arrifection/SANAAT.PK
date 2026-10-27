@@ -1,176 +1,101 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Hero,
   CategoryGrid,
   EditorialReel,
   BrandStatement,
-  PreorderBanner,
 } from '../components/home';
 import { ProductCard } from '../components/product';
-import { useNewProducts, useFeaturedProducts } from '../hooks/use-products';
-import { Skeleton, Button, Input } from '../components/ui';
+import { useFeaturedProducts } from '../hooks/use-products';
+import { Skeleton } from '../components/ui';
 import { SEO } from '../components/common';
-import { useToast } from '../components/ui/toast';
+import { ArrowRight } from 'lucide-react';
 
 export function HomePage() {
-  const { data: newProducts, isLoading: isLoadingNew } = useNewProducts(4);
-  const { data: featuredProducts, isLoading: isLoadingFeatured } = useFeaturedProducts(4);
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [isSubscribing, setIsSubscribing] = useState(false);
-  const { addToast } = useToast();
-
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newsletterEmail || !newsletterEmail.includes('@')) {
-      addToast({
-        type: 'error',
-        title: 'Invalid Email',
-        description: 'Please provide a valid email address.',
-      });
-      return;
-    }
-
-    setIsSubscribing(true);
-    setTimeout(() => {
-      setIsSubscribing(false);
-      setNewsletterEmail('');
-      addToast({
-        type: 'success',
-        title: 'Subscribed',
-        description: 'Welcome to the SANAAT circle. You will receive private previews and updates.',
-      });
-    }, 600);
-  };
+  // Section 3.D: Show three beautiful product cards
+  const { data: featuredProducts, isLoading: isLoadingFeatured } = useFeaturedProducts(3);
 
   return (
     <>
       <SEO
         title="SANAAT | Fashion with Modesty"
-        description="Contemporary Pakistani modest fashion brand. Discover handloom fabrics, refined silhouettes, and bespoke artisanal craft."
+        description="SANAAT — Quiet luxury modest fashion. Handcrafted Pakistani silhouettes designed with timeless elegance and modest grace."
       />
 
-      {/* 1. Large Hero */}
+      {/* C. Hero section */}
       <Hero />
 
-      {/* 2. New Collection Grid */}
-      <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-baseline mb-10 pb-4 border-b border-gray-100">
+      {/* D. Three featured dresses */}
+      <section className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-baseline mb-8 sm:mb-12 pb-4 border-b border-gray-100">
           <div>
-            <span className="text-[11px] uppercase tracking-[0.25em] text-plum font-sans font-medium">
-              Latest Arrivals
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-serif tracking-wide text-black mt-1">
-              New Collection
-            </h2>
-          </div>
-          <Link
-            to="/collections/new"
-            className="text-xs uppercase tracking-widest text-black hover:text-plum transition-colors mt-2 sm:mt-0 font-medium"
-          >
-            View All ({newProducts?.length ?? 0}) →
-          </Link>
-        </div>
-
-        {isLoadingNew ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="space-y-3">
-                <Skeleton className="aspect-[3/4] w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-            {newProducts?.map((product, idx) => (
-              <ProductCard key={product.id} product={product} priority={idx < 2} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* 3. Shop by Category */}
-      <CategoryGrid />
-
-      {/* 4. Featured Pieces */}
-      <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-baseline mb-10 pb-4 border-b border-gray-100">
-          <div>
-            <span className="text-[11px] uppercase tracking-[0.25em] text-plum font-sans font-medium">
+            <span className="text-[10px] sm:text-[11px] uppercase tracking-[0.3em] text-plum font-sans font-medium block">
               Curated Selection
             </span>
-            <h2 className="text-2xl sm:text-3xl font-serif tracking-wide text-black mt-1">
-              Featured Designs
+            <h2 className="text-2xl sm:text-3xl font-serif tracking-wide text-black mt-1 font-normal">
+              Featured Pieces
             </h2>
           </div>
           <Link
             to="/shop"
-            className="text-xs uppercase tracking-widest text-black hover:text-plum transition-colors mt-2 sm:mt-0 font-medium"
+            className="text-xs uppercase tracking-widest text-black hover:text-plum transition-colors mt-3 sm:mt-0 font-medium inline-flex items-center gap-1.5"
           >
-            Explore Shop →
+            <span>View All Pieces</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
         {isLoadingFeatured ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-            {[1, 2, 3, 4].map((i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            {[1, 2, 3].map((i) => (
               <div key={i} className="space-y-3">
                 <Skeleton className="aspect-[3/4] w-full" />
                 <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
+                <Skeleton className="h-3 w-1/3" />
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-            {featuredProducts?.map((product) => (
-              <ProductCard key={product.id} product={product} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            {featuredProducts?.slice(0, 3).map((product, idx) => (
+              <ProductCard key={product.id} product={product} priority={idx === 0} />
             ))}
           </div>
         )}
       </section>
 
-      {/* 5. Editorial Reel */}
+      {/* E. Slow-motion editorial strip */}
       <EditorialReel />
 
-      {/* 6. Brand Statement */}
+      {/* F. About Sanaat */}
       <BrandStatement />
 
-      {/* 7. Pre-order Banner */}
-      <PreorderBanner />
+      {/* G. Collections (Winter Formals, Summer Edit, Occasion Wear) */}
+      <CategoryGrid />
 
-      {/* 8. Newsletter Section */}
-      <section className="py-20 px-4 sm:px-6 max-w-2xl mx-auto text-center">
-        <span className="text-[11px] uppercase tracking-[0.25em] text-plum font-sans font-medium">
-          Privilege Access
-        </span>
-        <h2 className="text-2xl sm:text-3xl font-serif text-black mt-2 mb-3">
-          Join the SANAAT Circle
-        </h2>
-        <p className="text-xs sm:text-sm text-gray-600 font-light max-w-md mx-auto mb-6">
-          Subscribe for early access to private pre-orders, new seasonal launches, and curated design notes.
-        </p>
-
-        <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
-          <Input
-            type="email"
-            placeholder="Enter your email address"
-            value={newsletterEmail}
-            onChange={(e) => setNewsletterEmail(e.target.value)}
-            className="flex-1 text-xs"
-            required
-          />
-          <Button
-            type="submit"
-            variant="secondary"
-            loading={isSubscribing}
-            className="text-xs tracking-widest px-6"
-          >
-            SUBSCRIBE
-          </Button>
-        </form>
+      {/* H. Final CTA */}
+      <section className="py-16 sm:py-24 bg-black text-white text-center px-4 sm:px-6">
+        <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
+          <span className="text-[10px] sm:text-[11px] font-sans font-medium uppercase tracking-[0.35em] text-plum">
+            SANAAT STUDIO
+          </span>
+          <h2 className="text-2xl sm:text-4xl font-serif tracking-wide leading-tight font-normal">
+            Graceful Silhouettes for Every Moment
+          </h2>
+          <p className="text-xs sm:text-sm text-white/80 font-sans font-light max-w-md mx-auto leading-relaxed">
+            Discover pieces created to feel timeless, graceful and distinctly your own. Available nationwide across Pakistan.
+          </p>
+          <div className="pt-2">
+            <Link to="/shop">
+              <button
+                type="button"
+                className="bg-white hover:bg-gray-100 text-black px-8 py-3.5 text-xs font-sans uppercase tracking-[0.2em] font-medium transition-colors"
+              >
+                EXPLORE ALL PIECES
+              </button>
+            </Link>
+          </div>
+        </div>
       </section>
     </>
   );

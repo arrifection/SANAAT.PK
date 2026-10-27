@@ -1,16 +1,16 @@
 -- ══════════════════════════════════════════════════════════════
 -- SANAAT — PROMOTE ACCOUNT TO STORE ADMINISTRATOR
--- Replace YOUR_EMAIL_HERE with your exact Supabase email address.
--- Example: WHERE email = 'sara@example.com'
+-- Run this in the Supabase SQL Editor after creating your user in Supabase Authentication.
 -- ══════════════════════════════════════════════════════════════
 
+-- 1. Promote user to admin role in public.profiles
 INSERT INTO public.profiles (id, email, role)
 SELECT id, email, 'admin'
 FROM auth.users
-WHERE email = 'YOUR_EMAIL_HERE'
+WHERE email = 'arrifection@gmail.com'
 ON CONFLICT (id) DO UPDATE SET role = 'admin';
 
--- Run this check to verify the administrator role was granted:
+-- 2. Verification query (Should return 1 row with role = 'admin')
 SELECT id, email, role, created_at
 FROM public.profiles
-WHERE email = 'YOUR_EMAIL_HERE';
+WHERE email = 'arrifection@gmail.com';

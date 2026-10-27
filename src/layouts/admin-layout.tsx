@@ -19,7 +19,7 @@ const navItems = [
   { label: 'Products', href: '/admin/products', icon: Package, end: false },
   { label: 'Inventory', href: '/admin/inventory', icon: Boxes, end: false },
   { label: 'Orders', href: '/admin/orders', icon: ShoppingBag, end: false },
-  { label: 'Categories', href: '/admin/categories', icon: FolderTree, end: false },
+  { label: 'Collections', href: '/admin/categories', icon: FolderTree, end: false },
 ];
 
 export function AdminLayout() {

@@ -57,7 +57,16 @@ export function createSupabaseServices(): Services {
         .eq('status', 'active');
 
       if (filters?.category_slug) {
-        query = query.eq('categories.slug', filters.category_slug);
+        const { data: cat } = await client
+          .from('categories')
+          .select('id')
+          .eq('slug', filters.category_slug)
+          .maybeSingle();
+        if (cat) {
+          query = query.eq('category_id', cat.id);
+        } else {
+          return { data: [], total: 0, page: filters?.page || 1, limit: filters?.limit || 24, totalPages: 0 };
+        }
       }
       if (filters?.is_featured !== undefined) {
         query = query.eq('is_featured', filters.is_featured);
@@ -174,7 +183,16 @@ export function createSupabaseServices(): Services {
         query = query.ilike('name', `%${filters.search}%`);
       }
       if (filters?.category_slug) {
-        query = query.eq('categories.slug', filters.category_slug);
+        const { data: cat } = await client
+          .from('categories')
+          .select('id')
+          .eq('slug', filters.category_slug)
+          .maybeSingle();
+        if (cat) {
+          query = query.eq('category_id', cat.id);
+        } else {
+          return { data: [], total: 0, page: filters?.page || 1, limit: filters?.limit || 24, totalPages: 0 };
+        }
       }
 
       query = query.order('created_at', { ascending: false });

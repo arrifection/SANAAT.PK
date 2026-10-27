@@ -1,6 +1,6 @@
 -- ══════════════════════════════════════════════════════════════
--- SANAAT E-COMMERCE PLATFORM — ALL-IN-ONE SETUP SCRIPT
--- Paste this entire file into the Supabase SQL Editor and run it.
+-- SANAAT E-COMMERCE PLATFORM — COMPLETE SETUP SCRIPT
+-- Copy this entire file and run it in the Supabase SQL Editor.
 -- ══════════════════════════════════════════════════════════════
 
 -- 1. Create Enums (Idempotent)
@@ -146,7 +146,16 @@ CREATE TABLE IF NOT EXISTS public.contact_messages (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 10. Enable Row Level Security (Compatible with Automatic RLS)
+-- 10. Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_products_category_id ON public.products(category_id);
+CREATE INDEX IF NOT EXISTS idx_products_slug ON public.products(slug);
+CREATE INDEX IF NOT EXISTS idx_products_status_published ON public.products(status, is_published);
+CREATE INDEX IF NOT EXISTS idx_product_images_product_id ON public.product_images(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_variants_product_id ON public.product_variants(product_id);
+CREATE INDEX IF NOT EXISTS idx_orders_order_number ON public.orders(order_number);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON public.order_items(order_id);
+
+-- 11. Enable Row Level Security (RLS)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
@@ -156,7 +165,7 @@ ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
 
--- 11. Helper Function: is_admin()
+-- 12. Helper Function: is_admin()
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -169,8 +178,33 @@ AS $$
   );
 $$;
 
--- 12. Row Level Security Policies
--- Profiles
+GRANT EXECUTE ON FUNCTION public.is_admin() TO anon, authenticated, service_role;
+
+-- 13. Auto-create Profile Trigger for New Auth Users
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, role)
+  VALUES (NEW.id, NEW.email, 'user')
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.handle_new_user() TO anon, authenticated, service_role;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 14. Row Level Security Policies
+
+-- Profiles: Users can view their own profile; admins have full access
 DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile" ON public.profiles
   FOR SELECT USING (auth.uid() = id);
@@ -179,7 +213,7 @@ DROP POLICY IF EXISTS "Admins full access to profiles" ON public.profiles;
 CREATE POLICY "Admins full access to profiles" ON public.profiles
   FOR ALL USING (public.is_admin());
 
--- Categories
+-- Categories: Public can view active categories; admins have full access
 DROP POLICY IF EXISTS "Public can view active categories" ON public.categories;
 CREATE POLICY "Public can view active categories" ON public.categories
   FOR SELECT USING (is_active = TRUE);
@@ -188,7 +222,7 @@ DROP POLICY IF EXISTS "Admins full access to categories" ON public.categories;
 CREATE POLICY "Admins full access to categories" ON public.categories
   FOR ALL USING (public.is_admin());
 
--- Products
+-- Products: Public can view active published products; admins have full access
 DROP POLICY IF EXISTS "Public can view published active products" ON public.products;
 CREATE POLICY "Public can view published active products" ON public.products
   FOR SELECT USING (is_published = TRUE AND status = 'active');
@@ -197,7 +231,7 @@ DROP POLICY IF EXISTS "Admins full access to products" ON public.products;
 CREATE POLICY "Admins full access to products" ON public.products
   FOR ALL USING (public.is_admin());
 
--- Product Images
+-- Product Images: Public can view images of active published products; admins have full access
 DROP POLICY IF EXISTS "Public can view product images" ON public.product_images;
 CREATE POLICY "Public can view product images" ON public.product_images
   FOR SELECT USING (
@@ -213,7 +247,7 @@ DROP POLICY IF EXISTS "Admins full access to product images" ON public.product_i
 CREATE POLICY "Admins full access to product images" ON public.product_images
   FOR ALL USING (public.is_admin());
 
--- Product Variants
+-- Product Variants: Public can view variants of active published products; admins have full access
 DROP POLICY IF EXISTS "Public can view product variants" ON public.product_variants;
 CREATE POLICY "Public can view product variants" ON public.product_variants
   FOR SELECT USING (
@@ -229,7 +263,7 @@ DROP POLICY IF EXISTS "Admins full access to variants" ON public.product_variant
 CREATE POLICY "Admins full access to variants" ON public.product_variants
   FOR ALL USING (public.is_admin());
 
--- Orders & Order Items
+-- Orders: Public can view their order by order number (for confirmation page); admins have full access
 DROP POLICY IF EXISTS "Public can view own order by number" ON public.orders;
 CREATE POLICY "Public can view own order by number" ON public.orders
   FOR SELECT USING (TRUE);
@@ -238,6 +272,7 @@ DROP POLICY IF EXISTS "Admins full access to orders" ON public.orders;
 CREATE POLICY "Admins full access to orders" ON public.orders
   FOR ALL USING (public.is_admin());
 
+-- Order Items: Public can view items; admins have full access
 DROP POLICY IF EXISTS "Public can view order items" ON public.order_items;
 CREATE POLICY "Public can view order items" ON public.order_items
   FOR SELECT USING (TRUE);
@@ -246,7 +281,7 @@ DROP POLICY IF EXISTS "Admins full access to order items" ON public.order_items;
 CREATE POLICY "Admins full access to order items" ON public.order_items
   FOR ALL USING (public.is_admin());
 
--- Contact Messages
+-- Contact Messages: Anyone can submit an inquiry; admins have full access
 DROP POLICY IF EXISTS "Public can submit contact messages" ON public.contact_messages;
 CREATE POLICY "Public can submit contact messages" ON public.contact_messages
   FOR INSERT WITH CHECK (TRUE);
@@ -255,7 +290,7 @@ DROP POLICY IF EXISTS "Admins full access to contact messages" ON public.contact
 CREATE POLICY "Admins full access to contact messages" ON public.contact_messages
   FOR ALL USING (public.is_admin());
 
--- 13. Atomic Order RPC Function
+-- 15. Atomic Order RPC Function (Single Transaction Server-Side Checkout)
 CREATE OR REPLACE FUNCTION public.create_order_atomic(
   p_customer_name TEXT,
   p_email TEXT,
@@ -285,11 +320,11 @@ DECLARE
   v_item_price INT;
   v_item_qty INT;
 BEGIN
-  -- Generate human readable order number
+  -- Generate human-readable order number (e.g. SNT-000001)
   v_seq := nextval('order_number_seq');
   v_order_number := 'SNT-' || LPAD(v_seq::TEXT, 6, '0');
 
-  -- Pre-flight validation & calculate totals
+  -- Pre-flight validation & calculate authentic totals
   FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
   LOOP
     v_item_qty := (v_item->>'quantity')::INT;
@@ -407,7 +442,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.create_order_atomic TO anon, authenticated, service_role;
 
--- 14. Storage Bucket: product-images (Public read, admin-only write)
+-- 16. Storage Bucket: product-images (Public read, admin-only write)
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('product-images', 'product-images', true)
 ON CONFLICT (id) DO UPDATE SET public = true;
@@ -444,8 +479,9 @@ VALUES
   ('c1000000-0000-0000-0000-000000000002', 'Silk & Chiffon', 'silk-chiffon', 'Luxurious pure silk shirts paired with lightweight embroidered chiffon dupattas.', 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&q=80', 2, TRUE),
   ('c1000000-0000-0000-0000-000000000003', 'Handloom Khaddar', 'handloom-khaddar', 'Coarse hand-spun winter khaddar crafted by ateliers across South Punjab.', 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=800&q=80', 3, TRUE),
   ('c1000000-0000-0000-0000-000000000004', 'Everyday Solids', 'everyday-solids', 'Understated monochromatic matching separates for refined daily modesty.', 'https://images.unsplash.com/photo-1583391733981-8b530eaef1c1?w=800&q=80', 4, TRUE)
-ON CONFLICT (slug) DO UPDATE SET
+ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
+  slug = EXCLUDED.slug,
   description = EXCLUDED.description,
   image_url = EXCLUDED.image_url,
   display_order = EXCLUDED.display_order,
@@ -458,7 +494,7 @@ INSERT INTO public.products (
   details, display_order, low_stock_threshold
 ) VALUES
   (
-    'p1000000-0000-0000-0000-000000000001',
+    'd1000000-0000-0000-0000-000000000001',
     'Zahra Embroidered Lawn Ensemble',
     'zahra-embroidered-lawn-ensemble',
     'A masterpiece of subdued luxury. Features tonal ivory embroidery along the neckline and cuffs with a diaphanous organza border.',
@@ -471,7 +507,7 @@ INSERT INTO public.products (
     1, 3
   ),
   (
-    'p1000000-0000-0000-0000-000000000002',
+    'd1000000-0000-0000-0000-000000000002',
     'Noor Organza Silk Formal',
     'noor-organza-silk-formal',
     'Crafted from feather-light organza layered over pure raw silk slips. Detailed with hand-rendered tilla and seed pearl accents.',
@@ -487,7 +523,7 @@ INSERT INTO public.products (
     2, 3
   ),
   (
-    'p1000000-0000-0000-0000-000000000003',
+    'd1000000-0000-0000-0000-000000000003',
     'Mehr Handloom Khaddar Kurti',
     'mehr-handloom-khaddar-kurti',
     'Woven on traditional wooden pit-looms in Kamalia. Breathable, structured drape with minimal stitch line detailing.',
@@ -500,7 +536,7 @@ INSERT INTO public.products (
     3, 3
   ),
   (
-    'p1000000-0000-0000-0000-000000000004',
+    'd1000000-0000-0000-0000-000000000004',
     'Layla Plum Monochrome Co-ord',
     'layla-plum-monochrome-co-ord',
     'In signature SANAAT deep plum. Pure linen-cotton tailored in a relaxed loose cut with subtle pleats.',
@@ -512,8 +548,9 @@ INSERT INTO public.products (
     '2-piece matching set: tunic shirt and tapered trousers',
     4, 3
   )
-ON CONFLICT (slug) DO UPDATE SET
+ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
+  slug = EXCLUDED.slug,
   description = EXCLUDED.description,
   price = EXCLUDED.price,
   compare_at_price = EXCLUDED.compare_at_price,
@@ -534,30 +571,30 @@ ON CONFLICT (slug) DO UPDATE SET
 
 -- Clean existing demo images and re-insert
 DELETE FROM public.product_images WHERE product_id IN (
-  'p1000000-0000-0000-0000-000000000001',
-  'p1000000-0000-0000-0000-000000000002',
-  'p1000000-0000-0000-0000-000000000003',
-  'p1000000-0000-0000-0000-000000000004'
+  'd1000000-0000-0000-0000-000000000001',
+  'd1000000-0000-0000-0000-000000000002',
+  'd1000000-0000-0000-0000-000000000003',
+  'd1000000-0000-0000-0000-000000000004'
 );
 
 INSERT INTO public.product_images (product_id, url, position, alt_text) VALUES
-  ('p1000000-0000-0000-0000-000000000001', 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=800&q=80', 0, 'Zahra Ensemble Front'),
-  ('p1000000-0000-0000-0000-000000000001', 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&q=80', 1, 'Zahra Ensemble Detail'),
-  ('p1000000-0000-0000-0000-000000000002', 'https://images.unsplash.com/photo-1597983073512-ce20e7781138?w=800&q=80', 0, 'Noor Silk Formal'),
-  ('p1000000-0000-0000-0000-000000000003', 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=800&q=80', 0, 'Mehr Khaddar Kurti'),
-  ('p1000000-0000-0000-0000-000000000004', 'https://images.unsplash.com/photo-1583391733981-8b530eaef1c1?w=800&q=80', 0, 'Layla Plum Co-ord');
+  ('d1000000-0000-0000-0000-000000000001', 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=800&q=80', 0, 'Zahra Ensemble Front'),
+  ('d1000000-0000-0000-0000-000000000001', 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&q=80', 1, 'Zahra Ensemble Detail'),
+  ('d1000000-0000-0000-0000-000000000002', 'https://images.unsplash.com/photo-1597983073512-ce20e7781138?w=800&q=80', 0, 'Noor Silk Formal'),
+  ('d1000000-0000-0000-0000-000000000003', 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=800&q=80', 0, 'Mehr Khaddar Kurti'),
+  ('d1000000-0000-0000-0000-000000000004', 'https://images.unsplash.com/photo-1583391733981-8b530eaef1c1?w=800&q=80', 0, 'Layla Plum Co-ord');
 
 INSERT INTO public.product_variants (product_id, size, stock_quantity, sku) VALUES
-  ('p1000000-0000-0000-0000-000000000001', 'XS', 5, 'SNT-ZAHRA-XS'),
-  ('p1000000-0000-0000-0000-000000000001', 'S', 8, 'SNT-ZAHRA-S'),
-  ('p1000000-0000-0000-0000-000000000001', 'M', 10, 'SNT-ZAHRA-M'),
-  ('p1000000-0000-0000-0000-000000000001', 'L', 4, 'SNT-ZAHRA-L'),
-  ('p1000000-0000-0000-0000-000000000002', 'S', 0, 'SNT-NOOR-S'),
-  ('p1000000-0000-0000-0000-000000000002', 'M', 0, 'SNT-NOOR-M'),
-  ('p1000000-0000-0000-0000-000000000003', 'S', 2, 'SNT-MEHR-S'),
-  ('p1000000-0000-0000-0000-000000000003', 'M', 1, 'SNT-MEHR-M'),
-  ('p1000000-0000-0000-0000-000000000004', 'XS', 6, 'SNT-LAYLA-XS'),
-  ('p1000000-0000-0000-0000-000000000004', 'S', 7, 'SNT-LAYLA-S'),
-  ('p1000000-0000-0000-0000-000000000004', 'M', 12, 'SNT-LAYLA-M'),
-  ('p1000000-0000-0000-0000-000000000004', 'L', 5, 'SNT-LAYLA-L')
+  ('d1000000-0000-0000-0000-000000000001', 'XS', 5, 'SNT-ZAHRA-XS'),
+  ('d1000000-0000-0000-0000-000000000001', 'S', 8, 'SNT-ZAHRA-S'),
+  ('d1000000-0000-0000-0000-000000000001', 'M', 10, 'SNT-ZAHRA-M'),
+  ('d1000000-0000-0000-0000-000000000001', 'L', 4, 'SNT-ZAHRA-L'),
+  ('d1000000-0000-0000-0000-000000000002', 'S', 0, 'SNT-NOOR-S'),
+  ('d1000000-0000-0000-0000-000000000002', 'M', 0, 'SNT-NOOR-M'),
+  ('d1000000-0000-0000-0000-000000000003', 'S', 2, 'SNT-MEHR-S'),
+  ('d1000000-0000-0000-0000-000000000003', 'M', 1, 'SNT-MEHR-M'),
+  ('d1000000-0000-0000-0000-000000000004', 'XS', 6, 'SNT-LAYLA-XS'),
+  ('d1000000-0000-0000-0000-000000000004', 'S', 7, 'SNT-LAYLA-S'),
+  ('d1000000-0000-0000-0000-000000000004', 'M', 12, 'SNT-LAYLA-M'),
+  ('d1000000-0000-0000-0000-000000000004', 'L', 5, 'SNT-LAYLA-L')
 ON CONFLICT (product_id, size) DO UPDATE SET stock_quantity = EXCLUDED.stock_quantity;

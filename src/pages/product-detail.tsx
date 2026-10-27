@@ -14,10 +14,12 @@ import {
   QuantitySelector,
   StockBadge,
   ProductCard,
+  SizeChartModal,
 } from '../components/product';
-import { Button, Accordion, Modal, Skeleton } from '../components/ui';
+import { Button, Accordion, Skeleton } from '../components/ui';
 import { SEO, EmptyState } from '../components/common';
-import { sizeGuide, careInstructions, shippingInfo } from '../content/site-content';
+import { shippingPolicy, exchangePolicy } from '../content/site-content';
+import { PREORDER_POLICY } from '../content/site-config';
 import { Ruler, Truck, ShieldCheck, Clock } from 'lucide-react';
 import type { CartItem } from '../types';
 
@@ -32,7 +34,7 @@ export function ProductDetailPage() {
 
   const [selectedVariantId, setSelectedVariantId] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
-  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
+  const [sizeChartOpen, setSizeChartOpen] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
 
   // Auto-select first in-stock variant when product loads
@@ -85,6 +87,11 @@ export function ProductDetailPage() {
 
   const maxQty = selectedVariant ? getMaxQuantity(product, selectedVariant) : 1;
 
+  // Derive color from tags or details
+  const colorTag = product.tags?.find((t) =>
+    ['Plum', 'Ivory', 'Sage', 'Charcoal', 'Emerald', 'Blush', 'Black', 'White'].includes(t)
+  ) || product.fabric?.split(' ')[0] || 'Sanaat Palette';
+
   const handleAddToCart = () => {
     if (!selectedVariant || !isSelectedVariantPurchasable) return;
 
@@ -93,7 +100,7 @@ export function ProductDetailPage() {
       variant_id: selectedVariant.id,
       product_name: product.name,
       product_slug: product.slug,
-      size: selectedVariant.size,
+      size: selectedVariant.size, // Size selected here, never asked again at checkout
       unit_price: product.price,
       quantity,
       image_url: product.images[0]?.url || null,
@@ -112,7 +119,7 @@ export function ProductDetailPage() {
         image={product.images[0]?.url}
       />
 
-      {/* Breadcrumb */}
+      {/* Breadcrumb Navigation */}
       <nav className="text-xs uppercase tracking-wider text-gray-400 mb-6 flex items-center gap-2">
         <Link to="/" className="hover:text-black transition-colors">
           Home
@@ -121,23 +128,43 @@ export function ProductDetailPage() {
         <Link to="/shop" className="hover:text-black transition-colors">
           Shop
         </Link>
+        {product.category && (
+          <>
+            <span>/</span>
+            <Link
+              to={`/category/${product.category.slug}`}
+              className="hover:text-black transition-colors"
+            >
+              {product.category.name}
+            </Link>
+          </>
+        )}
         <span>/</span>
         <span className="text-black font-medium">{product.name}</span>
       </nav>
 
       {/* Main Product Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14">
-        {/* Left: Gallery (Large & Sticky on desktop) */}
+        {/* Left: Gallery (Large Image Gallery supporting up to 3 images) */}
         <div className="lg:col-span-7">
-          <ProductGallery images={product.images} productName={product.name} />
+          <ProductGallery images={product.images.slice(0, 3)} productName={product.name} />
         </div>
 
         {/* Right: Info Column */}
         <div className="lg:col-span-5 flex flex-col justify-between">
           <div className="space-y-6">
             <div>
-              <div className="flex items-center gap-3 mb-2">
+              {/* Status and collection tag */}
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
                 <StockBadge status={stockSummary.displayStatus} />
+                {product.category && (
+                  <Link
+                    to={`/category/${product.category.slug}`}
+                    className="text-[11px] font-sans uppercase tracking-widest text-gray-500 hover:text-plum transition-colors"
+                  >
+                    {product.category.name}
+                  </Link>
+                )}
                 {stockSummary.lowStockMessage && (
                   <span className="text-xs text-amber-800 font-medium tracking-wide">
                     {stockSummary.lowStockMessage}
@@ -145,10 +172,12 @@ export function ProductDetailPage() {
                 )}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif text-black tracking-wide leading-tight">
+              {/* Product Name */}
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif text-black tracking-wide leading-tight font-normal">
                 {product.name}
               </h1>
 
+              {/* Price */}
               <div className="flex items-baseline gap-3 mt-3">
                 <span className="text-xl sm:text-2xl font-serif text-black font-medium">
                   {formatPrice(product.price)}
@@ -159,35 +188,49 @@ export function ProductDetailPage() {
                   </span>
                 )}
               </div>
+
+              {/* Color attribute */}
+              <div className="mt-3 flex items-center gap-2 text-xs font-sans text-gray-600">
+                <span className="text-gray-400 uppercase tracking-wider">Color:</span>
+                <span className="font-medium text-black">{colorTag}</span>
+              </div>
             </div>
 
-            {/* Pre-order Details Banner */}
+            {/* Short Description */}
+            {product.description && (
+              <p className="text-xs sm:text-sm font-sans text-gray-600 leading-relaxed font-light">
+                {product.description}
+              </p>
+            )}
+
+            {/* Pre-order Details Banner strictly per Section 9 */}
             {product.is_preorder && (
-              <div className="bg-plum/5 border border-plum/20 p-4 space-y-2">
+              <div className="bg-plum/5 border border-plum/30 p-4 space-y-1.5">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-plum">
                   <Clock className="w-4 h-4" />
-                  <span>Pre-Order Window</span>
+                  <span>PRE-ORDER</span>
                 </div>
-                <p className="text-xs text-gray-700 leading-relaxed">
-                  This design is crafted upon order.
-                  {product.estimated_dispatch_date
-                    ? ` Estimated dispatch: ${new Date(product.estimated_dispatch_date).toLocaleDateString('en-PK', { month: 'long', year: 'numeric' })}`
-                    : ' Estimated dispatch: To be announced upon completion of the artisan run.'}
+                <p className="text-xs font-sans text-gray-800 font-medium">
+                  Preparation time: <strong className="text-black font-semibold">{PREORDER_POLICY.preparationTime}</strong>
+                </p>
+                <p className="text-[11px] font-sans text-gray-600">
+                  Each piece is tailored especially for you and dispatched after careful artisan quality inspection.
                 </p>
               </div>
             )}
 
-            {/* Size Selector + Size Guide Link */}
+            {/* Size Selector + "SEE SIZE CHART" Link (Section 6 & 7) */}
             {product.variants.length > 0 && (
               <div className="space-y-3 pt-2">
                 <div className="flex justify-between items-center text-xs uppercase tracking-wider">
                   <span className="font-medium text-black">Select Size</span>
                   <button
-                    onClick={() => setSizeGuideOpen(true)}
-                    className="flex items-center gap-1 text-gray-500 hover:text-plum transition-colors underline"
+                    type="button"
+                    onClick={() => setSizeChartOpen(true)}
+                    className="flex items-center gap-1.5 text-black hover:text-plum transition-colors font-medium underline tracking-widest text-[11px]"
                   >
-                    <Ruler className="w-3.5 h-3.5" />
-                    <span>Size Guide</span>
+                    <Ruler className="w-3.5 h-3.5 text-plum" />
+                    <span>SEE SIZE CHART</span>
                   </button>
                 </div>
 
@@ -217,17 +260,17 @@ export function ProductDetailPage() {
               </div>
             )}
 
-            {/* Primary Action Button */}
-            <div className="pt-4">
+            {/* Primary Action Button (Add to Cart / Pre-order) */}
+            <div className="pt-2">
               <Button
                 variant={stockSummary.isPreorder ? 'primary' : 'secondary'}
                 size="lg"
                 fullWidth
                 disabled={stockSummary.isOutOfStock || !isSelectedVariantPurchasable}
                 onClick={handleAddToCart}
-                className="py-4 text-xs tracking-[0.2em]"
+                className="py-4 text-xs font-sans tracking-[0.2em] font-medium"
               >
-                {stockSummary.ctaLabel}
+                {stockSummary.isPreorder ? 'PRE-ORDER NOW' : stockSummary.ctaLabel}
               </Button>
             </div>
 
@@ -235,48 +278,60 @@ export function ProductDetailPage() {
             <div className="grid grid-cols-2 gap-4 py-4 border-y border-gray-100 text-xs text-gray-600">
               <div className="flex items-center gap-2">
                 <Truck className="w-4 h-4 text-plum flex-shrink-0" />
-                <span>Nationwide Express Delivery</span>
+                <span>Punjab Rs. 250 · Outside Rs. 350</span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-plum flex-shrink-0" />
-                <span>100% Authentic Handcraft</span>
+                <span>Modest Artisanal Craft</span>
               </div>
             </div>
 
-            {/* Expandable Accordions */}
+            {/* Expandable Accordions for Details, Shipping & Exchanges */}
             <div className="pt-2 divide-y divide-gray-100">
-              {product.description && (
-                <Accordion title="Design & Silhouette" defaultOpen>
-                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-                    {product.description}
+              {product.details && (
+                <Accordion title="Product Details" defaultOpen>
+                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-light">
+                    {product.details}
                   </p>
                 </Accordion>
               )}
 
               {product.fabric && (
-                <Accordion title="Fabric & Material">
-                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                    {product.fabric}
-                  </p>
+                <Accordion title="Fabric & Care">
+                  <div className="text-xs sm:text-sm text-gray-600 space-y-2 font-light">
+                    <p><strong className="text-black font-medium">Fabric:</strong> {product.fabric}</p>
+                    <p><strong className="text-black font-medium">Care:</strong> {product.care_instructions || 'Dry clean recommended.'}</p>
+                  </div>
                 </Accordion>
               )}
 
-              <Accordion title="Care Instructions">
-                <div className="text-xs sm:text-sm text-gray-600 leading-relaxed space-y-2">
-                  <p>{product.care_instructions || 'Dry clean recommended.'}</p>
-                  <ul className="list-disc list-inside space-y-1 text-xs text-gray-500 pt-1">
-                    {careInstructions.items.map((item, idx) => (
-                      <li key={idx}>{item}</li>
-                    ))}
+              {/* Shipping Policy Accordion (Section 11) */}
+              <Accordion title="Shipping Information">
+                <div className="text-xs sm:text-sm text-gray-600 space-y-2 leading-relaxed font-light">
+                  <p className="font-serif italic text-black font-medium">
+                    &ldquo;{shippingPolicy.tagline}&rdquo;
+                  </p>
+                  <p>We deliver across Pakistan:</p>
+                  <ul className="list-disc list-inside space-y-1 text-xs">
+                    <li><strong>Punjab:</strong> Rs. 250</li>
+                    <li><strong>Outside Punjab (Sindh, KPK, Balochistan, ICT, etc.):</strong> Rs. 350</li>
                   </ul>
+                  <p className="text-[11px] text-gray-500 pt-1">
+                    Shipping is added automatically at checkout based on your address.
+                  </p>
                 </div>
               </Accordion>
 
-              <Accordion title="Shipping & Returns">
-                <div className="text-xs sm:text-sm text-gray-600 space-y-2 leading-relaxed">
-                  <p><strong>Domestic:</strong> {shippingInfo.deliveryTime}</p>
-                  <p>{shippingInfo.internationalNote}</p>
-                  <p className="text-xs text-gray-500 pt-1">{shippingInfo.returnsPolicy}</p>
+              {/* Exchange Policy Accordion (Section 10) */}
+              <Accordion title="Exchange Policy">
+                <div className="text-xs sm:text-sm text-gray-600 space-y-2 leading-relaxed font-light">
+                  <p className="font-serif italic text-black font-medium">
+                    &ldquo;{exchangePolicy.tagline}&rdquo;
+                  </p>
+                  <p>{exchangePolicy.paragraphs[0]}</p>
+                  <p className="font-semibold text-black text-xs pt-1">
+                    {exchangePolicy.paragraphs[1]}
+                  </p>
                 </div>
               </Accordion>
             </div>
@@ -287,7 +342,7 @@ export function ProductDetailPage() {
       {/* Mobile Sticky CTA Bar */}
       <div className="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 p-3 flex items-center justify-between gap-4 lg:hidden shadow-lg">
         <div>
-          <div className="text-xs text-gray-500 uppercase tracking-wider line-clamp-1">
+          <div className="text-xs text-gray-500 uppercase tracking-wider line-clamp-1 font-sans">
             {product.name}
           </div>
           <div className="font-serif text-sm font-semibold text-black">
@@ -299,67 +354,37 @@ export function ProductDetailPage() {
           size="sm"
           disabled={stockSummary.isOutOfStock || !isSelectedVariantPurchasable}
           onClick={handleAddToCart}
-          className="text-xs tracking-wider min-w-[140px]"
+          className="text-xs tracking-wider min-w-[140px] font-sans"
         >
-          {stockSummary.ctaLabel}
+          {stockSummary.isPreorder ? 'PRE-ORDER' : stockSummary.ctaLabel}
         </Button>
       </div>
 
       {/* Related Products */}
       {relatedProducts && relatedProducts.length > 0 && (
-        <section className="mt-24 pt-12 border-t border-gray-100">
-          <div className="text-center mb-10">
-            <span className="text-[11px] uppercase tracking-[0.25em] text-plum font-sans font-medium">
-              Complete the Look
+        <section className="mt-20 pt-12 border-t border-gray-100">
+          <div className="text-center mb-8 sm:mb-10">
+            <span className="text-[10px] uppercase tracking-[0.25em] text-plum font-sans font-medium">
+              You May Also Love
             </span>
-            <h2 className="text-2xl sm:text-3xl font-serif text-black mt-1">
+            <h2 className="text-2xl sm:text-3xl font-serif text-black mt-1 font-normal">
               Complementary Pieces
             </h2>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-            {relatedProducts.map((relProduct) => (
+            {relatedProducts.slice(0, 4).map((relProduct) => (
               <ProductCard key={relProduct.id} product={relProduct} />
             ))}
           </div>
         </section>
       )}
 
-      {/* Size Guide Modal */}
-      <Modal
-        isOpen={sizeGuideOpen}
-        onClose={() => setSizeGuideOpen(false)}
-        title={sizeGuide.heading}
-        size="lg"
-      >
-        <div className="space-y-4 py-2">
-          <p className="text-xs text-gray-500">{sizeGuide.note}</p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
-                  {sizeGuide.headers.map((h, i) => (
-                    <th key={i} className="py-2.5 px-3 uppercase tracking-wider font-semibold text-black">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {sizeGuide.rows.map((row, rIdx) => (
-                  <tr key={rIdx} className="hover:bg-gray-50">
-                    {row.map((cell, cIdx) => (
-                      <td key={cIdx} className="py-2 px-3 text-gray-700 font-medium">
-                        {cell}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </Modal>
+      {/* Global Size Chart Modal per Section 7 */}
+      <SizeChartModal
+        isOpen={sizeChartOpen}
+        onClose={() => setSizeChartOpen(false)}
+      />
     </div>
   );
 }

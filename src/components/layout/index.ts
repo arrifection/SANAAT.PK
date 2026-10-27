@@ -15,3 +15,5 @@ export type { FooterProps } from './footer';
 
 export { SearchOverlay } from './search-overlay';
 export type { SearchOverlayProps } from './search-overlay';
+
+export { FloatingWhatsApp } from './floating-whatsapp';

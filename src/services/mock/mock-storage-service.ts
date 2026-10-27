@@ -1,27 +1,31 @@
 // ──────────────────────────────────────────────
-// SANAAT — Mock Storage Service
+// SANAAT — Storage Service (Data URL & Persistence)
+// Converts uploaded photos to Data URLs so actual photos show
 // ──────────────────────────────────────────────
 
 import type { StorageService } from '../interfaces';
 import { generateId } from '../../utils';
 
-const delay = () => new Promise<void>((r) => setTimeout(r, 150));
-
 export function createMockStorageService(): StorageService {
   const service: StorageService = {
     async uploadProductImage(file: File, productId: string) {
-      await delay();
+      // Read actual file as base64 data URL so owner's uploaded photo is genuinely displayed
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Failed to read image file'));
+        reader.readAsDataURL(file);
+      });
+
       const fakeId = generateId();
       const ext = file.name.split('.').pop() ?? 'jpg';
       const storagePath = `products/${productId}/${fakeId}.${ext}`;
-      const url = `https://placehold.co/600x800/f5f5f5/999999?text=${encodeURIComponent(file.name)}`;
 
-      return { url, storage_path: storagePath };
+      return { url: dataUrl, storage_path: storagePath };
     },
 
     async deleteProductImage(_storagePath: string) {
-      await delay();
-      // Mock: no-op — nothing to actually delete
+      // No-op for local mock storage
     },
   };
 

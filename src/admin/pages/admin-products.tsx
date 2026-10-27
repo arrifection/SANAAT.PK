@@ -11,13 +11,14 @@ import { getDisplayStatus, getStatusBadgeClass, getStatusLabel } from '../../uti
 import { Button, Input, Select, Skeleton } from '../../components/ui';
 import { SEO, SafeImage } from '../../components/common';
 import { useToast } from '../../components/ui/toast';
-import { Plus, Search, Edit3, Trash2, Archive, Star, Eye } from 'lucide-react';
+import { Plus, Search, Edit3, Trash2, Eye } from 'lucide-react';
 import type { ProductFilters, DisplayStatus } from '../../types';
 
 export function AdminProductsPage() {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<DisplayStatus | ''>('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const { addToast } = useToast();
 
   const { data: categories } = useCategories();
@@ -34,53 +35,81 @@ export function AdminProductsPage() {
 
   const products = result?.data || [];
 
-  const handleTogglePublished = async (id: string, current: boolean) => {
-    try {
-      await updateProduct({ id, data: { is_published: !current } });
-      addToast({
-        type: 'success',
-        title: 'Status Updated',
-        description: `Product is now ${!current ? 'published' : 'hidden'}.`,
-      });
-    } catch {
-      addToast({ type: 'error', title: 'Error', description: 'Failed to update publication status' });
+  // Bulk selection logic (Section 19)
+  const isAllSelected = products.length > 0 && selectedIds.length === products.length;
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(products.map((p) => p.id));
     }
   };
 
-  const handleToggleFeatured = async (id: string, current: boolean) => {
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  // Bulk Actions
+  const handleBulkPublish = async () => {
     try {
-      await updateProduct({ id, data: { is_featured: !current } });
+      for (const id of selectedIds) {
+        await updateProduct({ id, data: { is_published: true, status: 'active' } });
+      }
       addToast({
         type: 'success',
-        title: 'Featured Status Updated',
-        description: `Product is ${!current ? 'now featured' : 'no longer featured'}.`,
+        title: 'Published',
+        description: `${selectedIds.length} products published.`,
       });
+      setSelectedIds([]);
     } catch {
-      addToast({ type: 'error', title: 'Error', description: 'Failed to update featured flag' });
+      addToast({ type: 'error', title: 'Error', description: 'Failed to publish selected products.' });
     }
   };
 
-  const handleArchive = async (id: string, currentStatus: string) => {
+  const handleBulkArchive = async () => {
     try {
-      const nextStatus = currentStatus === 'archived' ? 'active' : 'archived';
-      await updateProduct({ id, data: { status: nextStatus as any } });
+      for (const id of selectedIds) {
+        await updateProduct({ id, data: { status: 'archived' as any } });
+      }
       addToast({
         type: 'success',
-        title: 'Archive Status Updated',
-        description: `Product moved to ${nextStatus}.`,
+        title: 'Archived',
+        description: `${selectedIds.length} products moved to archived.`,
       });
+      setSelectedIds([]);
     } catch {
-      addToast({ type: 'error', title: 'Error', description: 'Failed to archive product' });
+      addToast({ type: 'error', title: 'Error', description: 'Failed to archive selected products.' });
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Are you sure you want to permanently delete "${name}"? This action cannot be undone.`)) {
+  const handleBulkDelete = async () => {
+    if (confirm(`Permanently delete ${selectedIds.length} selected products? This action cannot be undone.`)) {
+      try {
+        for (const id of selectedIds) {
+          await deleteProduct(id);
+        }
+        addToast({
+          type: 'success',
+          title: 'Deleted',
+          description: `${selectedIds.length} products permanently deleted.`,
+        });
+        setSelectedIds([]);
+      } catch {
+        addToast({ type: 'error', title: 'Error', description: 'Failed to delete selected products.' });
+      }
+    }
+  };
+
+  const handleDeleteSingle = async (id: string, name: string) => {
+    if (confirm(`Permanently delete "${name}"?`)) {
       try {
         await deleteProduct(id);
         addToast({ type: 'success', title: 'Product Deleted', description: `"${name}" was deleted.` });
       } catch {
-        addToast({ type: 'error', title: 'Error', description: 'Failed to delete product' });
+        addToast({ type: 'error', title: 'Error', description: 'Failed to delete product.' });
       }
     }
   };
@@ -94,14 +123,14 @@ export function AdminProductsPage() {
         <div>
           <h1 className="text-2xl font-serif text-black">Product Catalog</h1>
           <p className="text-xs uppercase tracking-widest text-gray-400 mt-1">
-            Manage your fashion pieces, stock, and photography
+            Manage your dresses, photography, and inventory
           </p>
         </div>
 
         <Link to="/admin/products/new">
           <Button variant="primary" size="md" className="text-xs tracking-widest">
             <Plus className="w-4 h-4 mr-1.5" />
-            ADD PRODUCT
+            + ADD PRODUCT
           </Button>
         </Link>
       </div>
@@ -114,7 +143,7 @@ export function AdminProductsPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by title, SKU, or tag..."
+              placeholder="Search by dress name, color..."
               className="pl-9 text-xs h-9 py-1"
             />
           </div>
@@ -125,7 +154,7 @@ export function AdminProductsPage() {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="text-xs h-9 py-1"
             >
-              <option value="">All Categories</option>
+              <option value="">All Collections</option>
               {categories?.map((cat) => (
                 <option key={cat.id} value={cat.slug}>
                   {cat.name}
@@ -152,22 +181,63 @@ export function AdminProductsPage() {
         </div>
 
         <div className="text-xs text-gray-400 uppercase tracking-wider">
-          Total: <strong>{products.length}</strong> items
+          Total: <strong>{products.length}</strong> dresses
         </div>
       </div>
 
-      {/* Products Table */}
+      {/* Bulk Action Bar (Section 19: Obvious and Fast) */}
+      {selectedIds.length > 0 && (
+        <div className="bg-plum text-white p-3.5 px-4 flex flex-wrap items-center justify-between gap-3 shadow-md animate-fadeIn">
+          <div className="text-xs font-sans font-medium uppercase tracking-wider flex items-center gap-2">
+            <span className="bg-white text-plum px-2 py-0.5 font-bold rounded-sm text-[11px]">
+              {selectedIds.length}
+            </span>
+            <span>Products Selected</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleBulkPublish}
+              className="bg-white text-black hover:bg-gray-100 text-xs px-3 py-1.5 uppercase tracking-wider font-medium transition-colors"
+            >
+              Publish Selected
+            </button>
+            <button
+              onClick={handleBulkArchive}
+              className="bg-black/40 hover:bg-black/60 text-white text-xs px-3 py-1.5 uppercase tracking-wider font-medium transition-colors"
+            >
+              Archive Selected
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              className="bg-red-700 hover:bg-red-800 text-white text-xs px-3 py-1.5 uppercase tracking-wider font-medium transition-colors"
+            >
+              Delete Selected
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Products Table with Checkboxes */}
       <div className="bg-white border border-gray-200 overflow-x-auto">
-        <table className="w-full text-left text-xs">
+        <table className="w-full text-left text-xs font-sans">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50 text-gray-500 uppercase tracking-wider">
+              <th className="py-3 px-3 w-10 text-center">
+                <input
+                  type="checkbox"
+                  checked={isAllSelected}
+                  onChange={handleSelectAll}
+                  className="rounded text-plum focus:ring-plum"
+                  aria-label="Select all products"
+                />
+              </th>
               <th className="py-3 px-4 font-semibold">Image</th>
               <th className="py-3 px-4 font-semibold">Product Name</th>
-              <th className="py-3 px-4 font-semibold">Category</th>
+              <th className="py-3 px-4 font-semibold">Collection</th>
               <th className="py-3 px-4 font-semibold">Price</th>
               <th className="py-3 px-4 font-semibold">Status</th>
-              <th className="py-3 px-4 font-semibold text-center">Published</th>
-              <th className="py-3 px-4 font-semibold text-center">Featured</th>
+              <th className="py-3 px-4 font-semibold text-center">Live</th>
               <th className="py-3 px-4 font-semibold text-right">Actions</th>
             </tr>
           </thead>
@@ -191,12 +261,29 @@ export function AdminProductsPage() {
                 const status = getDisplayStatus(product, product.variants);
                 const badgeClass = getStatusBadgeClass(status);
                 const statusLabel = getStatusLabel(status);
+                const isSelected = selectedIds.includes(product.id);
 
                 return (
-                  <tr key={product.id} className="hover:bg-gray-50/80 transition-colors">
+                  <tr
+                    key={product.id}
+                    className={`transition-colors ${
+                      isSelected ? 'bg-plum/5' : 'hover:bg-gray-50/80'
+                    }`}
+                  >
+                    {/* Checkbox */}
+                    <td className="py-2 px-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleToggleSelect(product.id)}
+                        className="rounded text-plum focus:ring-plum"
+                        aria-label={`Select ${product.name}`}
+                      />
+                    </td>
+
                     {/* Thumbnail */}
                     <td className="py-2 px-4">
-                      <div className="w-10 h-12 bg-gray-100 overflow-hidden flex-shrink-0">
+                      <div className="w-10 h-12 bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200">
                         <SafeImage
                           src={product.images[0]?.url}
                           alt={product.name}
@@ -205,98 +292,73 @@ export function AdminProductsPage() {
                       </div>
                     </td>
 
-                    {/* Name */}
-                    <td className="py-2 px-4">
+                    {/* Name & Variants */}
+                    <td className="py-2 px-4 font-medium text-black">
                       <Link
                         to={`/admin/products/${product.id}`}
-                        className="font-serif text-sm font-medium text-black hover:text-plum"
+                        className="hover:text-plum transition-colors font-serif text-sm block"
                       >
                         {product.name}
                       </Link>
-                      <div className="text-[10px] text-gray-400 font-mono">
-                        slug: /{product.slug}
-                      </div>
+                      <span className="text-[11px] text-gray-400 block font-light">
+                        Sizes: {product.variants.map((v) => `${v.size}(${v.stock_quantity})`).join(', ') || 'None'}
+                      </span>
                     </td>
 
-                    {/* Category */}
+                    {/* Collection */}
                     <td className="py-2 px-4 text-gray-600">
                       {product.category?.name || '—'}
                     </td>
 
                     {/* Price */}
-                    <td className="py-2 px-4 font-medium text-black font-serif">
+                    <td className="py-2 px-4 font-serif font-medium text-black text-sm">
                       {formatPrice(product.price)}
                     </td>
 
-                    {/* Derived Status */}
+                    {/* Status Badge */}
                     <td className="py-2 px-4">
-                      <span className={`px-2 py-0.5 rounded-sm text-[10px] uppercase font-semibold ${badgeClass}`}>
+                      <span className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-semibold ${badgeClass}`}>
                         {statusLabel}
                       </span>
                     </td>
 
-                    {/* Published Toggle */}
+                    {/* Live status */}
                     <td className="py-2 px-4 text-center">
-                      <button
-                        onClick={() => handleTogglePublished(product.id, product.is_published)}
-                        className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-1 rounded-sm transition-colors ${
-                          product.is_published
-                            ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      <span
+                        className={`inline-block w-2 h-2 rounded-full ${
+                          product.is_published ? 'bg-emerald-500' : 'bg-gray-300'
                         }`}
-                      >
-                        {product.is_published ? 'Live' : 'Hidden'}
-                      </button>
-                    </td>
-
-                    {/* Featured Star */}
-                    <td className="py-2 px-4 text-center">
-                      <button
-                        onClick={() => handleToggleFeatured(product.id, product.is_featured)}
-                        className="p-1 hover:scale-110 transition-transform"
-                        title={product.is_featured ? 'Featured on homepage' : 'Not featured'}
-                      >
-                        <Star
-                          className={`w-4 h-4 ${
-                            product.is_featured
-                              ? 'text-amber-500 fill-amber-500'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      </button>
+                        title={product.is_published ? 'Published' : 'Hidden'}
+                      />
                     </td>
 
                     {/* Actions */}
-                    <td className="py-2 px-4 text-right space-x-1">
-                      <Link
-                        to={`/product/${product.slug}`}
-                        target="_blank"
-                        className="p-1.5 text-gray-400 hover:text-black inline-block"
-                        title="View on storefront"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </Link>
-                      <Link
-                        to={`/admin/products/${product.id}`}
-                        className="p-1.5 text-gray-600 hover:text-plum inline-block"
-                        title="Edit product"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </Link>
-                      <button
-                        onClick={() => handleArchive(product.id, product.status)}
-                        className="p-1.5 text-gray-400 hover:text-amber-600"
-                        title={product.status === 'archived' ? 'Restore product' : 'Archive product'}
-                      >
-                        <Archive className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(product.id, product.name)}
-                        className="p-1.5 text-gray-400 hover:text-red-600"
-                        title="Delete permanently"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    <td className="py-2 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Link
+                          to={`/product/${product.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1.5 text-gray-400 hover:text-black transition-colors"
+                          title="View on Storefront"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        <Link
+                          to={`/admin/products/${product.id}`}
+                          className="p-1.5 text-gray-500 hover:text-plum transition-colors"
+                          title="Edit Product"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </Link>
+                        <button
+                          onClick={() => handleDeleteSingle(product.id, product.name)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                          title="Delete Product"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
