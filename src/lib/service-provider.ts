@@ -35,9 +35,9 @@ export async function initializeServices(): Promise<Services> {
       const { createSupabaseServices } = await import('../services/supabase/index');
       const supabaseServices = createSupabaseServices();
 
-      // Fast 2.5 second timeout to prevent mobile stalls on poor connections
+      // 5.0 second timeout to accommodate mobile networks (e.g. 4G/LTE in Pakistan)
       const timeoutPromise = new Promise<{ data: null }>((resolve) =>
-        setTimeout(() => resolve({ data: null }), 2500)
+        setTimeout(() => resolve({ data: null }), 5000)
       );
 
       const test = await Promise.race([

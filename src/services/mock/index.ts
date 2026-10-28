@@ -29,21 +29,33 @@ import type {
 } from '../../types';
 
 const STORAGE_KEYS = {
-  CATEGORIES: 'sanaat_categories_v3',
-  PRODUCTS: 'sanaat_products_v3',
-  IMAGES: 'sanaat_images_v3',
-  VARIANTS: 'sanaat_variants_v3',
-  ORDERS: 'sanaat_orders_v3',
-  ORDER_ITEMS: 'sanaat_order_items_v3',
+  CATEGORIES: 'sanaat_categories_v4',
+  PRODUCTS: 'sanaat_products_v4',
+  IMAGES: 'sanaat_images_v4',
+  VARIANTS: 'sanaat_variants_v4',
+  ORDERS: 'sanaat_orders_v4',
+  ORDER_ITEMS: 'sanaat_order_items_v4',
 };
 
 function loadOrFallback<T>(key: string, fallback: T): T {
   try {
+    // Purge legacy v3 mock products containing dummy items (e.g. prod-noor-001) so old browser caches don't pollute devices
+    const legacyProducts = localStorage.getItem('sanaat_products_v3');
+    if (legacyProducts && legacyProducts.includes('prod-noor-001')) {
+      localStorage.removeItem('sanaat_products_v3');
+      localStorage.removeItem('sanaat_images_v3');
+      localStorage.removeItem('sanaat_variants_v3');
+    }
+
     const raw = localStorage.getItem(key);
     if (raw !== null) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed as T;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Discard any array containing legacy dummy IDs
+        const hasLegacyDummy = parsed.some((item: any) => typeof item?.id === 'string' && item.id.startsWith('prod-'));
+        if (!hasLegacyDummy) {
+          return parsed as T;
+        }
       }
     }
   } catch {

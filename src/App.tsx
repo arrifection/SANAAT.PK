@@ -17,6 +17,7 @@ export function App() {
       .then((s) => {
         if (mounted && s) {
           setServices(s);
+          queryClient.invalidateQueries();
         }
       })
       .catch((err) => {
