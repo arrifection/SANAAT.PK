@@ -38,6 +38,76 @@ import type {
 } from '../../types';
 import { getTotalStock } from '../../utils/stock';
 
+const VALID_PRODUCT_COLUMNS = new Set([
+  'name',
+  'slug',
+  'description',
+  'price',
+  'compare_at_price',
+  'category_id',
+  'status',
+  'is_published',
+  'is_featured',
+  'is_preorder',
+  'preorder_closes_at',
+  'estimated_dispatch_date',
+  'preorder_limit',
+  'tags',
+  'fabric',
+  'care_instructions',
+  'details',
+  'display_order',
+  'low_stock_threshold',
+]);
+
+const CANONICAL_CATEGORY_UUIDS: Record<string, string> = {
+  'cat-winter-formals': 'c1000000-0000-0000-0000-000000000010',
+  'winter-formals': 'c1000000-0000-0000-0000-000000000010',
+  'cat-summer-edit': 'c1000000-0000-0000-0000-000000000020',
+  'summer-edit': 'c1000000-0000-0000-0000-000000000020',
+};
+
+function sanitizeProductPayload<T extends Record<string, any>>(data: T): Partial<T> {
+  const sanitized: any = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (VALID_PRODUCT_COLUMNS.has(key) && value !== undefined) {
+      sanitized[key] = value;
+    }
+  }
+
+  // Ensure category_id is a valid UUID or map mock slug IDs to canonical UUIDs
+  if (sanitized.category_id) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sanitized.category_id);
+    if (!isUuid) {
+      sanitized.category_id = CANONICAL_CATEGORY_UUIDS[sanitized.category_id] || null;
+    }
+  }
+
+  return sanitized;
+}
+
+const COMMON_COLORS = ['Plum', 'Ivory', 'Sage', 'Charcoal', 'Emerald', 'Blush', 'White', 'Black', 'Navy', 'Dusty Rose'];
+
+function hydrateProduct(p: any): any {
+  if (!p) return p;
+  const foundColor = p.tags?.find((t: string) =>
+    COMMON_COLORS.some((c) => t.toLowerCase().includes(c.toLowerCase()))
+  );
+  const color = p.color || foundColor || null;
+  const fabricCare = p.fabric_care || (
+    p.care_instructions
+      ? (p.care_instructions.toLowerCase().includes('dry clean') ? 'Dry Clean' : 'Washable')
+      : null
+  );
+  const productType = p.product_type || p.tags?.find((t: string) => ['Top', 'Bottom', 'Set'].includes(t)) || null;
+  return {
+    ...p,
+    color,
+    fabric_care: fabricCare,
+    product_type: productType,
+  };
+}
+
 export function createSupabaseServices(): Services {
   if (!supabase) {
     throw new Error('Supabase client is not configured.');
@@ -75,7 +145,17 @@ export function createSupabaseServices(): Services {
         query = query.eq('is_preorder', filters.is_preorder);
       }
       if (filters?.search) {
-        query = query.ilike('name', `%${filters.search}%`);
+        const s = filters.search.replace(/[,()]/g, ' ').trim();
+        const words = s.split(/\s+/).filter((w) => w.length > 0);
+        if (words.length > 1) {
+          const clauses = [`name.ilike.%${s}%`];
+          for (const w of words) {
+            if (w.length > 1) clauses.push(`name.ilike.%${w}%`);
+          }
+          query = query.or(clauses.join(','));
+        } else {
+          query = query.ilike('name', `%${s}%`);
+        }
       }
 
       // Sort
@@ -93,7 +173,7 @@ export function createSupabaseServices(): Services {
       if (error) throw error;
 
       return {
-        data: (data as any) || [],
+        data: ((data as any) || []).map(hydrateProduct),
         total: count || 0,
         page,
         limit,
@@ -109,7 +189,7 @@ export function createSupabaseServices(): Services {
         .single();
 
       if (error) return null;
-      return data as any;
+      return hydrateProduct(data);
     },
 
     async getFeaturedProducts(limit = 6): Promise<ProductWithRelations[]> {
@@ -122,7 +202,7 @@ export function createSupabaseServices(): Services {
         .limit(limit);
 
       if (error) throw error;
-      return (data as any) || [];
+      return ((data as any) || []).map(hydrateProduct);
     },
 
     async getNewProducts(limit = 8): Promise<ProductWithRelations[]> {
@@ -135,7 +215,7 @@ export function createSupabaseServices(): Services {
         .limit(limit);
 
       if (error) throw error;
-      return (data as any) || [];
+      return ((data as any) || []).map(hydrateProduct);
     },
 
     async getProductsByCategory(categorySlug: string, filters?: ProductFilters): Promise<PaginatedResult<ProductWithRelations>> {
@@ -156,21 +236,38 @@ export function createSupabaseServices(): Services {
 
       const { data, error } = await query.limit(limit);
       if (error) throw error;
-      return (data as any) || [];
+      return ((data as any) || []).map(hydrateProduct);
     },
 
     async searchProducts(queryText: string, limit = 12): Promise<ProductWithRelations[]> {
-      const q = queryText.trim();
+      const q = queryText.replace(/[,()]/g, ' ').trim();
+      if (!q) return [];
+
+      const words = q.split(/\s+/).filter((w) => w.length > 0);
+      const clauses: string[] = [
+        `name.ilike.%${q}%`,
+        `description.ilike.%${q}%`,
+        `fabric.ilike.%${q}%`,
+      ];
+
+      for (const w of words) {
+        if (w.length > 1 && w.toLowerCase() !== q.toLowerCase()) {
+          clauses.push(`name.ilike.%${w}%`);
+          clauses.push(`description.ilike.%${w}%`);
+          clauses.push(`fabric.ilike.%${w}%`);
+        }
+      }
+
       const { data, error } = await client
         .from('products')
         .select('*, category:categories(*), images:product_images(*), variants:product_variants(*)')
         .eq('is_published', true)
         .eq('status', 'active')
-        .or(`name.ilike.%${q}%,description.ilike.%${q}%,fabric.ilike.%${q}%,color.ilike.%${q}%`)
+        .or(clauses.join(','))
         .limit(limit);
 
       if (error) throw error;
-      return (data as any) || [];
+      return ((data as any) || []).map(hydrateProduct);
     },
 
     async getAllProducts(filters?: ProductFilters): Promise<PaginatedResult<ProductWithRelations>> {
@@ -181,7 +278,17 @@ export function createSupabaseServices(): Services {
         });
 
       if (filters?.search) {
-        query = query.ilike('name', `%${filters.search}%`);
+        const s = filters.search.replace(/[,()]/g, ' ').trim();
+        const words = s.split(/\s+/).filter((w) => w.length > 0);
+        if (words.length > 1) {
+          const clauses = [`name.ilike.%${s}%`];
+          for (const w of words) {
+            if (w.length > 1) clauses.push(`name.ilike.%${w}%`);
+          }
+          query = query.or(clauses.join(','));
+        } else {
+          query = query.ilike('name', `%${s}%`);
+        }
       }
       if (filters?.category_slug) {
         const { data: cat } = await client
@@ -207,7 +314,7 @@ export function createSupabaseServices(): Services {
       if (error) throw error;
 
       return {
-        data: (data as any) || [],
+        data: ((data as any) || []).map(hydrateProduct),
         total: count || 0,
         page,
         limit,
@@ -223,28 +330,30 @@ export function createSupabaseServices(): Services {
         .single();
 
       if (error) return null;
-      return data as any;
+      return hydrateProduct(data);
     },
 
     async createProduct(data: ProductInsert): Promise<Product> {
+      const cleanData = sanitizeProductPayload(data);
       const { data: created, error } = await client
         .from('products')
-        .insert(data)
+        .insert(cleanData)
         .select()
         .single();
       if (error) throw error;
-      return created as Product;
+      return hydrateProduct(created) as Product;
     },
 
     async updateProduct(id: string, data: ProductUpdate): Promise<Product> {
+      const cleanData = sanitizeProductPayload(data);
       const { data: updated, error } = await client
         .from('products')
-        .update({ ...data, updated_at: new Date().toISOString() })
+        .update({ ...cleanData, updated_at: new Date().toISOString() })
         .eq('id', id)
         .select()
         .single();
       if (error) throw error;
-      return updated as Product;
+      return hydrateProduct(updated) as Product;
     },
 
     async deleteProduct(id: string): Promise<void> {

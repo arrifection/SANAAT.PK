@@ -69,6 +69,22 @@ export function AdminProductsPage() {
     }
   };
 
+  const handleBulkUnpublish = async () => {
+    try {
+      for (const id of selectedIds) {
+        await updateProduct({ id, data: { is_published: false, status: 'draft' } });
+      }
+      addToast({
+        type: 'success',
+        title: 'Unpublished',
+        description: `${selectedIds.length} products unpublished.`,
+      });
+      setSelectedIds([]);
+    } catch {
+      addToast({ type: 'error', title: 'Error', description: 'Failed to unpublish selected products.' });
+    }
+  };
+
   const handleBulkArchive = async () => {
     try {
       for (const id of selectedIds) {
@@ -201,6 +217,12 @@ export function AdminProductsPage() {
               className="bg-white text-black hover:bg-gray-100 text-xs px-3 py-1.5 uppercase tracking-wider font-medium transition-colors"
             >
               Publish Selected
+            </button>
+            <button
+              onClick={handleBulkUnpublish}
+              className="bg-black/20 hover:bg-black/40 text-white text-xs px-3 py-1.5 uppercase tracking-wider font-medium transition-colors"
+            >
+              Unpublish Selected
             </button>
             <button
               onClick={handleBulkArchive}
@@ -349,14 +371,43 @@ export function AdminProductsPage() {
                       </button>
                     </td>
 
-                    {/* Live status */}
+                    {/* Live status (Click to toggle published / hidden) */}
                     <td className="py-2 px-4 text-center">
-                      <span
-                        className={`inline-block w-2 h-2 rounded-full ${
-                          product.is_published ? 'bg-emerald-500' : 'bg-gray-300'
-                        }`}
-                        title={product.is_published ? 'Published' : 'Hidden'}
-                      />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const newPub = !product.is_published;
+                            await updateProduct({
+                              id: product.id,
+                              data: {
+                                is_published: newPub,
+                                status: newPub ? 'active' : 'draft',
+                              },
+                            });
+                            addToast({
+                              type: 'success',
+                              title: newPub ? 'Published' : 'Unpublished',
+                              description: `"${product.name}" is now ${newPub ? 'live' : 'hidden'}.`,
+                            });
+                          } catch {
+                            addToast({
+                              type: 'error',
+                              title: 'Error',
+                              description: 'Failed to update publication status.',
+                            });
+                          }
+                        }}
+                        className="inline-flex items-center justify-center p-1 rounded hover:bg-gray-100 transition-colors"
+                        title={product.is_published ? 'Published (Click to unpublish)' : 'Hidden (Click to publish)'}
+                        aria-label={product.is_published ? 'Unpublish dress' : 'Publish dress'}
+                      >
+                        <span
+                          className={`inline-block w-2.5 h-2.5 rounded-full ${
+                            product.is_published ? 'bg-emerald-500' : 'bg-gray-300'
+                          }`}
+                        />
+                      </button>
                     </td>
 
                     {/* Actions */}

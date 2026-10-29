@@ -29,11 +29,10 @@ const FABRIC_CARE_OPTIONS = ['Washable', 'Dry Clean'] as const;
 // Product types per Section 15
 const PRODUCT_TYPES = ['Top', 'Bottom', 'Set'] as const;
 
-// 3 Canonical Collections per Section 5 (Winter Formals, Summer Edit, Occasion Wear)
+// Canonical Collections verified against Supabase (Winter Formals, Summer Edit)
 const CANONICAL_COLLECTIONS = [
-  { id: 'cat-winter-formals', name: 'Winter Formals', slug: 'winter-formals' },
-  { id: 'cat-summer-edit', name: 'Summer Edit', slug: 'summer-edit' },
-  { id: 'cat-occasion-wear', name: 'Occasion Wear', slug: 'occasion-wear' },
+  { id: 'c1000000-0000-0000-0000-000000000010', name: 'Winter Formals', slug: 'winter-formals' },
+  { id: 'c1000000-0000-0000-0000-000000000020', name: 'Summer Edit', slug: 'summer-edit' },
 ];
 
 export function AdminProductFormPage() {
@@ -111,12 +110,13 @@ export function AdminProductFormPage() {
         (c) =>
           c.id === existingProduct.category_id ||
           c.slug === existingProduct.category_id ||
+          ('cat-' + c.slug) === existingProduct.category_id ||
           c.name.toLowerCase() === existingProduct.category_id?.toLowerCase()
       );
       setCategoryId(
         matchedCat
           ? matchedCat.id
-          : (existingProduct.category_id || availableCollections[0]?.id || 'cat-winter-formals')
+          : (existingProduct.category_id || availableCollections[0]?.id || 'c1000000-0000-0000-0000-000000000010')
       );
 
       setDescription(existingProduct.description || '');
@@ -186,12 +186,17 @@ export function AdminProductFormPage() {
         }
         setSizes(nextSizes);
       }
-    } else if (availableCollections && availableCollections.length > 0 && !categoryId) {
-      setCategoryId(availableCollections[0].id);
-      // Auto populate first template
-      setDescription(productDescriptionTemplates[0].generate('Noor', 'Plum'));
+    } else if (availableCollections && availableCollections.length > 0) {
+      if (!categoryId || !availableCollections.some((c) => c.id === categoryId)) {
+        const match = availableCollections.find((c) => c.id === categoryId || c.slug === categoryId || ('cat-' + c.slug) === categoryId);
+        setCategoryId(match ? match.id : availableCollections[0].id);
+      }
+      if (!description) {
+        // Auto populate first template
+        setDescription(productDescriptionTemplates[0].generate('Noor', 'Plum'));
+      }
     }
-  }, [existingProduct, categories, availableCollections]);
+  }, [existingProduct, categories, availableCollections, categoryId, description]);
 
   // Name select helper
   const handleSelectSuggestedName = (suggested: string) => {
@@ -301,11 +306,21 @@ export function AdminProductFormPage() {
     try {
       let productId = id;
 
+      const matchedCat = availableCollections.find(
+        (c) =>
+          c.id === categoryId ||
+          c.slug === categoryId ||
+          ('cat-' + c.slug) === categoryId ||
+          c.id === existingProduct?.category_id ||
+          c.slug === existingProduct?.category_id ||
+          ('cat-' + c.slug) === existingProduct?.category_id
+      );
+
       const finalCategoryId =
+        matchedCat?.id ||
         categoryId ||
-        availableCollections.find((c) => c.id === existingProduct?.category_id)?.id ||
         availableCollections[0]?.id ||
-        'cat-winter-formals';
+        'c1000000-0000-0000-0000-000000000010';
 
       const productPayload = {
         name: name.trim(),
@@ -321,7 +336,7 @@ export function AdminProductFormPage() {
         preorder_closes_at: null,
         estimated_dispatch_date: null,
         preorder_limit: isPreorder ? 30 : null,
-        tags: [color, fabricType, isPreorder ? 'Pre-Order' : 'Available'],
+        tags: [color, fabricType, productType, isPreorder ? 'Pre-Order' : 'Available'].filter(Boolean) as string[],
         fabric: fabricType,
         fabric_care: fabricCare,
         product_type: productType,
