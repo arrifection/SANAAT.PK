@@ -12,6 +12,7 @@ import type {
   StorageService,
   ContactService,
   DashboardService,
+  SettingsService,
 } from '../interfaces';
 import type {
   Category,
@@ -35,7 +36,9 @@ import type {
   PaginatedResult,
   DashboardStats,
   Profile,
+  SiteSettings,
 } from '../../types';
+import { defaultSiteSettings } from '../../content/site-content';
 import { getTotalStock } from '../../utils/stock';
 
 const VALID_PRODUCT_COLUMNS = new Set([
@@ -48,6 +51,7 @@ const VALID_PRODUCT_COLUMNS = new Set([
   'status',
   'is_published',
   'is_featured',
+  'is_new_arrival',
   'is_preorder',
   'preorder_closes_at',
   'estimated_dispatch_date',
@@ -65,6 +69,8 @@ const CANONICAL_CATEGORY_UUIDS: Record<string, string> = {
   'winter-formals': 'c1000000-0000-0000-0000-000000000010',
   'cat-summer-edit': 'c1000000-0000-0000-0000-000000000020',
   'summer-edit': 'c1000000-0000-0000-0000-000000000020',
+  'cat-occasion-wear': 'c1000000-0000-0000-0000-000000000030',
+  'occasion-wear': 'c1000000-0000-0000-0000-000000000030',
 };
 
 function sanitizeProductPayload<T extends Record<string, any>>(data: T): Partial<T> {
@@ -713,6 +719,61 @@ export function createSupabaseServices(): Services {
     },
   };
 
+  // ── Settings ──
+  const settings: SettingsService = {
+    async getSettings(): Promise<SiteSettings> {
+      try {
+        const { data, error } = await client
+          .from('site_settings')
+          .select('*')
+          .limit(1)
+          .maybeSingle();
+
+        if (error) {
+          console.warn('[SANAAT] Could not fetch site_settings from Supabase (using defaults):', error.message);
+          return defaultSiteSettings;
+        }
+
+        if (data) {
+          return {
+            ...defaultSiteSettings,
+            ...data,
+            brand_quotes: Array.isArray(data.brand_quotes) ? data.brand_quotes : defaultSiteSettings.brand_quotes,
+          };
+        }
+      } catch (err) {
+        console.warn('[SANAAT] Error querying site_settings:', err);
+      }
+
+      return defaultSiteSettings;
+    },
+
+    async updateSettings(data: Partial<SiteSettings>): Promise<SiteSettings> {
+      const payload = {
+        id: data.id || 'current',
+        ...data,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data: updatedData, error } = await client
+        .from('site_settings')
+        .upsert(payload)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[SANAAT] Supabase site_settings save error:', error);
+        throw new Error(`Database error saving settings: ${error.message}`);
+      }
+
+      return {
+        ...defaultSiteSettings,
+        ...updatedData,
+        brand_quotes: Array.isArray(updatedData.brand_quotes) ? updatedData.brand_quotes : defaultSiteSettings.brand_quotes,
+      };
+    },
+  };
+
   return {
     products,
     categories,
@@ -721,5 +782,6 @@ export function createSupabaseServices(): Services {
     storage,
     contact,
     dashboard,
+    settings,
   };
 }

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../utils';
 import { announcementBarText } from '../../content/site-content';
+import { useSiteSettings } from '../../hooks/use-settings';
 
 const STORAGE_KEY = 'sanaat_announcement_dismissed_v2';
 
@@ -15,6 +16,7 @@ export function AnnouncementBar({
   text = announcementBarText,
   className,
 }: AnnouncementBarProps) {
+  const { data: settings } = useSiteSettings();
   const [isDismissed, setIsDismissed] = useState(() => {
     try {
       return sessionStorage.getItem(STORAGE_KEY) === 'true';
@@ -33,7 +35,9 @@ export function AnnouncementBar({
     }
   }, [isDismissed]);
 
-  if (isDismissed) return null;
+  if (isDismissed || settings?.announcement_visible === false) return null;
+
+  const displayText = settings?.announcement_text || text;
 
   return (
     <div
@@ -46,7 +50,7 @@ export function AnnouncementBar({
         to="/shop?preorder=true"
         className="text-[10px] sm:text-[11px] font-sans font-medium uppercase tracking-[0.25em] hover:underline"
       >
-        {text}
+        {displayText}
       </Link>
       <button
         onClick={() => setIsDismissed(true)}

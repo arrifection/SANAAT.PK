@@ -10,6 +10,8 @@ import {
   LogOut,
   Menu,
   X,
+  Plus,
+  Sliders,
 } from 'lucide-react';
 import { useAuth } from '../hooks/use-auth';
 import { cn } from '../utils';
@@ -17,6 +19,7 @@ import { cn } from '../utils';
 const navItems = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, end: true },
   { label: 'Products', href: '/admin/products', icon: Package, end: false },
+  { label: 'Storefront', href: '/admin/storefront', icon: Sliders, end: false },
   { label: 'Inventory', href: '/admin/inventory', icon: Boxes, end: false },
   { label: 'Orders', href: '/admin/orders', icon: ShoppingBag, end: false },
   { label: 'Collections', href: '/admin/categories', icon: FolderTree, end: false },
@@ -147,9 +150,64 @@ export function AdminLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8 max-w-7xl w-full mx-auto">
           <Outlet />
         </main>
+
+        {/* Mobile Bottom Navigation Bar (Mobile-first control) */}
+        <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 z-30 flex items-center justify-around h-16 px-2 shadow-lg">
+          <NavLink
+            to="/admin"
+            end
+            className={({ isActive }) =>
+              cn(
+                'flex flex-col items-center justify-center py-1 px-3 text-[10px] uppercase font-sans tracking-wider transition-colors',
+                isActive ? 'text-plum font-semibold' : 'text-gray-500 hover:text-black'
+              )
+            }
+          >
+            <LayoutDashboard className="w-5 h-5 mb-0.5" />
+            <span>Dashboard</span>
+          </NavLink>
+          <NavLink
+            to="/admin/products"
+            className={({ isActive }) =>
+              cn(
+                'flex flex-col items-center justify-center py-1 px-3 text-[10px] uppercase font-sans tracking-wider transition-colors',
+                isActive ? 'text-plum font-semibold' : 'text-gray-500 hover:text-black'
+              )
+            }
+          >
+            <Package className="w-5 h-5 mb-0.5" />
+            <span>Catalog</span>
+          </NavLink>
+          <NavLink
+            to="/admin/products/new"
+            className="flex flex-col items-center justify-center -mt-5 bg-plum text-white w-12 h-12 rounded-full shadow-md hover:bg-plum/90 transition-transform active:scale-95"
+            aria-label="Add new product"
+          >
+            <Plus className="w-6 h-6" />
+          </NavLink>
+          <NavLink
+            to="/admin/orders"
+            className={({ isActive }) =>
+              cn(
+                'flex flex-col items-center justify-center py-1 px-3 text-[10px] uppercase font-sans tracking-wider transition-colors',
+                isActive ? 'text-plum font-semibold' : 'text-gray-500 hover:text-black'
+              )
+            }
+          >
+            <ShoppingBag className="w-5 h-5 mb-0.5" />
+            <span>Orders</span>
+          </NavLink>
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="flex flex-col items-center justify-center py-1 px-3 text-[10px] uppercase font-sans tracking-wider text-gray-500 hover:text-black transition-colors"
+          >
+            <Menu className="w-5 h-5 mb-0.5" />
+            <span>More</span>
+          </button>
+        </nav>
       </div>
     </div>
   );

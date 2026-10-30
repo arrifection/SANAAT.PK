@@ -240,8 +240,163 @@ export function AdminProductsPage() {
         </div>
       )}
 
-      {/* Products Table with Checkboxes */}
-      <div className="bg-white border border-gray-200 overflow-x-auto">
+      {/* Mobile Card List (Mobile-first responsive view) */}
+      <div className="block md:hidden space-y-3">
+        {isLoading ? (
+          [1, 2, 3].map((i) => (
+            <div key={i} className="p-4 bg-white border border-gray-200 space-y-3">
+              <Skeleton className="h-6 w-1/2" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ))
+        ) : products.length === 0 ? (
+          <div className="p-8 bg-white border border-gray-200 text-center text-gray-400 uppercase tracking-widest text-xs">
+            No products found matching filters
+          </div>
+        ) : (
+          products.map((product) => {
+            const status = getDisplayStatus(product, product.variants);
+            const badgeClass = getStatusBadgeClass(status);
+            const statusLabel = getStatusLabel(status);
+            const isSelected = selectedIds.includes(product.id);
+
+            return (
+              <div
+                key={product.id}
+                className={`p-4 bg-white border transition-colors space-y-3 ${
+                  isSelected ? 'border-plum bg-plum/5' : 'border-gray-200'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => handleToggleSelect(product.id)}
+                    className="mt-1 rounded text-plum focus:ring-plum"
+                    aria-label={`Select ${product.name}`}
+                  />
+                  <div className="w-16 h-20 bg-gray-100 flex-shrink-0 border border-gray-200 overflow-hidden">
+                    <SafeImage
+                      src={product.images[0]?.url}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <Link
+                        to={`/admin/products/${product.id}`}
+                        className="font-serif font-medium text-base text-black hover:text-plum truncate block"
+                      >
+                        {product.name}
+                      </Link>
+                      <span className={`px-2 py-0.5 text-[9px] uppercase tracking-wider font-semibold rounded-sm ${badgeClass}`}>
+                        {statusLabel}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 font-sans mt-0.5">
+                      {product.category?.name || 'Unassigned'}
+                    </p>
+                    <p className="font-serif font-semibold text-black text-sm mt-1">
+                      {formatPrice(product.price)}
+                    </p>
+                    <p className="text-[10px] text-gray-400 font-sans mt-0.5">
+                      Sizes: {product.variants.map((v) => `${v.size}(${v.stock_quantity})`).join(', ') || 'None'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Mobile Action Controls */}
+                <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await updateProduct({ id: product.id, data: { is_featured: !product.is_featured } });
+                          addToast({
+                            type: 'success',
+                            title: !product.is_featured ? 'Featured on Homepage' : 'Removed from Featured',
+                            description: `"${product.name}" updated.`,
+                          });
+                        } catch (err: any) {
+                          addToast({ type: 'error', title: 'Error', description: err?.message || 'Failed to update featured state.' });
+                        }
+                      }}
+                      className={`inline-flex items-center gap-1 py-1 px-2 text-[10px] uppercase tracking-wider font-medium border rounded transition-colors ${
+                        product.is_featured ? 'border-amber-400 text-amber-600 bg-amber-50' : 'border-gray-200 text-gray-500'
+                      }`}
+                    >
+                      <Star className={`w-3.5 h-3.5 ${product.is_featured ? 'fill-current' : ''}`} />
+                      <span>{product.is_featured ? 'Featured' : 'Feature'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const newPub = !product.is_published;
+                          await updateProduct({
+                            id: product.id,
+                            data: {
+                              is_published: newPub,
+                              status: newPub ? 'active' : 'draft',
+                            },
+                          });
+                          addToast({
+                            type: 'success',
+                            title: newPub ? 'Published' : 'Unpublished',
+                            description: `"${product.name}" is now ${newPub ? 'live' : 'hidden'}.`,
+                          });
+                        } catch (err: any) {
+                          addToast({ type: 'error', title: 'Error', description: err?.message || 'Failed to update status.' });
+                        }
+                      }}
+                      className={`py-1 px-2 text-[10px] uppercase tracking-wider font-semibold border rounded transition-colors ${
+                        product.is_published
+                          ? 'border-emerald-300 text-emerald-700 bg-emerald-50'
+                          : 'border-gray-200 text-gray-500 bg-gray-50'
+                      }`}
+                    >
+                      {product.is_published ? '● Live' : '○ Hidden'}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <Link
+                      to={`/product/${product.slug}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-2 text-gray-400 hover:text-black"
+                      title="View on Storefront"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Link>
+                    <Link
+                      to={`/admin/products/${product.id}`}
+                      className="p-2 text-gray-600 hover:text-plum font-semibold text-xs"
+                      title="Edit Product"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSingle(product.id, product.name)}
+                      className="p-2 text-gray-400 hover:text-red-600"
+                      title="Delete Product"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop Products Table with Checkboxes */}
+      <div className="hidden md:block bg-white border border-gray-200 overflow-x-auto">
         <table className="w-full text-left text-xs font-sans">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50 text-gray-500 uppercase tracking-wider">
@@ -357,8 +512,8 @@ export function AdminProductsPage() {
                               title: !product.is_featured ? 'Featured on Homepage' : 'Removed from Featured',
                               description: `"${product.name}" updated.`,
                             });
-                          } catch {
-                            addToast({ type: 'error', title: 'Error', description: 'Failed to update featured state.' });
+                          } catch (err: any) {
+                            addToast({ type: 'error', title: 'Error', description: err?.message || 'Failed to update featured state.' });
                           }
                         }}
                         className={`p-1.5 rounded transition-colors ${
@@ -390,11 +545,11 @@ export function AdminProductsPage() {
                               title: newPub ? 'Published' : 'Unpublished',
                               description: `"${product.name}" is now ${newPub ? 'live' : 'hidden'}.`,
                             });
-                          } catch {
+                          } catch (err: any) {
                             addToast({
                               type: 'error',
                               title: 'Error',
-                              description: 'Failed to update publication status.',
+                              description: err?.message || 'Failed to update publication status.',
                             });
                           }
                         }}

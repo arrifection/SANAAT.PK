@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useCategories } from '../../hooks/use-categories';
+import { useSiteSettings } from '../../hooks/use-settings';
 import { Skeleton } from '../ui';
 
 // Local collection images (supplied by owner — Section 6)
@@ -23,6 +24,9 @@ function CollectionImagePlaceholder({ label }: { label: string }) {
 
 export function CategoryGrid() {
   const { data: categories, isLoading } = useCategories();
+  const { data: settings } = useSiteSettings();
+
+  if (settings?.categories_visible === false) return null;
 
   if (isLoading) {
     return (
@@ -43,8 +47,8 @@ export function CategoryGrid() {
   if (!categories || categories.length === 0) return null;
 
   return (
-    <section className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      <div className="text-center mb-10 sm:mb-12">
+    <section className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden">
+      <div className="text-center mb-10 sm:mb-12 animate-fade-in">
         <span className="text-[10px] sm:text-[11px] font-sans font-medium uppercase tracking-[0.3em] text-plum block mb-1">
           Curated Collections
         </span>
@@ -53,33 +57,39 @@ export function CategoryGrid() {
         </h2>
       </div>
 
-      {/* 3 Core Collections — Winter Formals, Summer Edit, Occasion Wear */}
+      {/* 3 Core Collections — Alternate left/right entrance, image appearing before text */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 lg:gap-8">
-        {categories.map((category) => {
+        {categories.map((category, idx) => {
           const imageUrl = category.image_url || COLLECTION_IMAGES[category.slug];
+          const isEven = idx % 2 === 0;
+
           return (
             <Link
               key={category.id}
               to={`/collections/${category.slug}`}
-              className="group relative block aspect-[3/4] overflow-hidden bg-gray-100"
+              className={`group relative block aspect-[3/4] overflow-hidden bg-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 ${
+                isEven ? 'animate-enter-left' : 'animate-enter-right'
+              }`}
             >
-              {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt={category.name}
-                  className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-                  loading="lazy"
-                />
-              ) : (
-                <CollectionImagePlaceholder label={category.name} />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent transition-opacity group-hover:from-black/85" />
-              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6 text-center text-white">
-                <h3 className="text-xl sm:text-2xl font-serif tracking-wider mb-1.5">
+              <div className="w-full h-full overflow-hidden animate-image-reveal">
+                {imageUrl ? (
+                  <img
+                    src={imageUrl}
+                    alt={category.name}
+                    className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+                    loading="lazy"
+                  />
+                ) : (
+                  <CollectionImagePlaceholder label={category.name} />
+                )}
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent transition-opacity group-hover:from-black/90" />
+              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6 text-center text-white animate-text-reveal">
+                <h3 className="text-xl sm:text-2xl font-serif tracking-wider mb-1.5 font-normal">
                   {category.name}
                 </h3>
-                <span className="text-[10px] sm:text-[11px] font-sans uppercase tracking-[0.2em] text-white border-b border-white/60 pb-0.5 group-hover:border-white transition-colors">
-                  Explore →
+                <span className="text-[10px] sm:text-[11px] font-sans uppercase tracking-[0.2em] text-white/90 border-b border-white/60 pb-0.5 group-hover:border-white transition-colors">
+                  Explore Collection →
                 </span>
               </div>
             </Link>

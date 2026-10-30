@@ -4,8 +4,34 @@
 // ──────────────────────────────────────────────
 
 import { CONTACT_INFO, PREORDER_POLICY, SHIPPING_RATES } from './site-config';
+import type { SiteSettings } from '../types';
 
 export const announcementBarText = 'PRE-ORDERS NOW OPEN · LIMITED PIECES';
+
+export const defaultSiteSettings: SiteSettings = {
+  announcement_text: 'PRE-ORDERS NOW OPEN · LIMITED PIECES',
+  announcement_visible: true,
+  moving_ticker_text: 'Pre-order Available · Free Delivery Above Rs 10,000',
+  moving_ticker_visible: true,
+  hero_headline: 'FASHION WITH MODESTY',
+  hero_title: 'Timeless Modest Elegance',
+  hero_subline: 'Thoughtful design and modest elegance — timeless, graceful silhouettes.',
+  hero_bg_image:
+    'https://images.unsplash.com/photo-1558171813-4c088753af8f?w=1920&q=85&auto=format&fit=crop',
+  brand_quotes: [
+    'Sanaat is a quiet celebration of thoughtful design — for the woman who values quality, modesty, and enduring elegance.',
+    'Pakistani fashion, made modest. Handcrafted silhouettes designed with timeless elegance and modest grace.',
+    'Pieces created to feel timeless, graceful and distinctly your own.',
+  ],
+  about_heading: 'About Sanaat',
+  about_quote:
+    'Sanaat is a celebration of thoughtful design and modest elegance — pieces created to feel timeless, graceful and distinctly your own.',
+  about_description:
+    'Rooted in Pakistani heritage and tailored with quiet restraint, each Sanaat piece honors fine craftsmanship, feminine grace, and everyday modesty.',
+  about_visible: true,
+  featured_visible: true,
+  categories_visible: true,
+};
 
 export const heroContent = {
   headline: 'FASHION WITH MODESTY',

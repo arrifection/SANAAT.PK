@@ -22,6 +22,7 @@ import {
   Ruler,
   Upload,
   ImageIcon,
+  Sliders,
 } from 'lucide-react';
 
 const DEFAULT_COLLECTION_IMAGES: Record<string, string> = {
@@ -172,6 +173,15 @@ export function AdminDashboardPage() {
             >
               <Plus className="w-4 h-4" />
               <span>+ Add Product</span>
+            </button>
+          </Link>
+          <Link to="/admin/storefront">
+            <button
+              type="button"
+              className="bg-black hover:bg-gray-800 text-white px-4 py-2 text-xs font-sans uppercase tracking-widest font-medium inline-flex items-center gap-1.5 transition-colors"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Storefront Controls</span>
             </button>
           </Link>
           <Link to="/admin/orders">

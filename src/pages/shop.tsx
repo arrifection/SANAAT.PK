@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useProducts } from '../hooks/use-products';
 import { useCategories } from '../hooks/use-categories';
 import { ProductCard } from '../components/product';
@@ -13,6 +13,7 @@ export function ShopPage() {
   const selectedSort = (searchParams.get('sort') as ProductFilters['sort']) || 'newest';
   const selectedStatus = (searchParams.get('status') as DisplayStatus) || undefined;
   const isPreorderOnly = searchParams.get('preorder') === 'true';
+  const isNewArrivalsOnly = searchParams.get('new') === 'true';
 
   const { data: categories } = useCategories();
 
@@ -21,6 +22,7 @@ export function ShopPage() {
     sort: selectedSort,
     status: selectedStatus,
     is_preorder: isPreorderOnly ? true : undefined,
+    is_new_arrival: isNewArrivalsOnly ? true : undefined,
     limit: 50,
   };
 
@@ -57,6 +59,16 @@ export function ShopPage() {
     setSearchParams(next);
   };
 
+  const handleNewArrivalsToggle = () => {
+    const next = new URLSearchParams(searchParams);
+    if (isNewArrivalsOnly) {
+      next.delete('new');
+    } else {
+      next.set('new', 'true');
+    }
+    setSearchParams(next);
+  };
+
   return (
     <div className="py-8 sm:py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       <SEO
@@ -77,17 +89,38 @@ export function ShopPage() {
         </p>
       </div>
 
-      {/* Filter / Sort Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 py-4 mb-8 border-y border-gray-100">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Category Dropdown */}
+      {/* Filter / Sort Bar: Show New Arrivals, New Collection, and Filter aligned in one row with consistent styling */}
+      <div className="flex flex-wrap items-center justify-between gap-3 py-4 mb-8 border-y border-gray-100">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Show New Arrivals */}
+          <button
+            type="button"
+            onClick={handleNewArrivalsToggle}
+            className={`h-9 px-3.5 text-xs uppercase tracking-wider font-sans font-medium transition-colors border rounded-sm inline-flex items-center gap-1.5 ${
+              isNewArrivalsOnly
+                ? 'bg-plum text-white border-plum'
+                : 'bg-white text-gray-700 border-gray-200 hover:border-black'
+            }`}
+          >
+            <span>Show New Arrivals</span>
+          </button>
+
+          {/* New Collection */}
+          <Link
+            to="/collections/new"
+            className="h-9 px-3.5 text-xs uppercase tracking-wider font-sans font-medium transition-colors border border-gray-200 hover:border-black text-gray-700 bg-white rounded-sm inline-flex items-center gap-1.5"
+          >
+            <span>New Collection</span>
+          </Link>
+
+          {/* Filter (Category dropdown) */}
           <div className="w-44">
             <Select
               value={selectedCategory || ''}
               onChange={(e) => handleCategoryChange(e.target.value)}
-              className="text-xs h-9 py-1"
+              className="text-xs h-9 py-1 rounded-sm border-gray-200 hover:border-black"
             >
-              <option value="">All Collections</option>
+              <option value="">Filter: All Collections</option>
               {categories?.map((cat) => (
                 <option key={cat.id} value={cat.slug}>
                   {cat.name}
@@ -98,10 +131,11 @@ export function ShopPage() {
 
           {/* Pre-order Filter Pill */}
           <button
+            type="button"
             onClick={handlePreorderToggle}
-            className={`px-3 py-1.5 text-xs uppercase tracking-wider transition-colors border ${
+            className={`h-9 px-3 py-1.5 text-xs uppercase tracking-wider font-sans font-medium transition-colors border rounded-sm ${
               isPreorderOnly
-                ? 'bg-plum text-white border-plum font-medium'
+                ? 'bg-plum text-white border-plum'
                 : 'bg-white text-gray-700 border-gray-200 hover:border-black'
             }`}
           >
@@ -112,13 +146,13 @@ export function ShopPage() {
         {/* Sort */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-400 uppercase tracking-wider hidden sm:inline">
-            Sort by:
+            Sort:
           </span>
-          <div className="w-44">
+          <div className="w-40">
             <Select
               value={selectedSort}
               onChange={(e) => handleSortChange(e.target.value)}
-              className="text-xs h-9 py-1"
+              className="text-xs h-9 py-1 rounded-sm border-gray-200 hover:border-black"
             >
               <option value="newest">Newest First</option>
               <option value="price_asc">Price: Low to High</option>

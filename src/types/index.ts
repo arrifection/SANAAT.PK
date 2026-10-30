@@ -51,6 +51,7 @@ export interface Product {
   status: ProductStatusEnum;
   is_published: boolean;
   is_featured: boolean;
+  is_new_arrival?: boolean;
   is_preorder: boolean;
   preorder_closes_at: string | null;
   estimated_dispatch_date: string | null;
@@ -209,6 +210,7 @@ export interface ProductFilters {
   status?: DisplayStatus;
   search?: string;
   is_featured?: boolean;
+  is_new_arrival?: boolean;
   is_published?: boolean;
   is_preorder?: boolean;
   sort?: 'newest' | 'oldest' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
@@ -242,4 +244,26 @@ export interface DashboardStats {
   outOfStockProducts: number;
   totalOrders: number;
   newOrders: number;
+}
+
+// ── Storefront & Homepage Settings ──
+
+export interface SiteSettings {
+  id?: string;
+  announcement_text: string;
+  announcement_visible: boolean;
+  moving_ticker_text: string;
+  moving_ticker_visible: boolean;
+  hero_headline: string;
+  hero_title: string;
+  hero_subline: string;
+  hero_bg_image: string;
+  brand_quotes: string[];
+  about_heading: string;
+  about_quote: string;
+  about_description: string;
+  about_visible: boolean;
+  featured_visible: boolean;
+  categories_visible: boolean;
+  updated_at?: string;
 }

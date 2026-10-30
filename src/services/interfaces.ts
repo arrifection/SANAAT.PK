@@ -15,6 +15,7 @@ import type {
   ProductFilters, PaginatedResult,
   DashboardStats,
   Profile,
+  SiteSettings,
 } from '../types';
 
 // ── Product Service ──
@@ -101,6 +102,13 @@ export interface DashboardService {
   getLowStockProducts(limit?: number): Promise<ProductWithRelations[]>;
 }
 
+// ── Settings Service ──
+
+export interface SettingsService {
+  getSettings(): Promise<SiteSettings>;
+  updateSettings(data: Partial<SiteSettings>): Promise<SiteSettings>;
+}
+
 // ── Aggregated Services ──
 
 export interface Services {
@@ -111,4 +119,5 @@ export interface Services {
   storage: StorageService;
   contact: ContactService;
   dashboard: DashboardService;
+  settings: SettingsService;
 }

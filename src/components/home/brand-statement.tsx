@@ -1,23 +1,35 @@
 import { brandStatement } from '../../content/site-content';
+import { useSiteSettings } from '../../hooks/use-settings';
 
 export function BrandStatement() {
+  const { data: settings } = useSiteSettings();
+
+  const isVisible = settings?.about_visible ?? true;
+  if (!isVisible) return null;
+
+  const heading = settings?.about_heading || brandStatement.heading;
+  const quote = settings?.about_quote || brandStatement.quote;
+  const description = settings?.about_description || brandStatement.description;
+
   return (
-    <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center">
-      <span className="text-[10px] sm:text-[11px] uppercase tracking-[0.3em] text-plum font-sans font-medium block mb-3 sm:mb-4">
-        {brandStatement.heading}
-      </span>
-      <h2 className="text-xl sm:text-2xl md:text-3xl font-serif tracking-wide text-black max-w-2xl mx-auto leading-relaxed font-normal">
-        &ldquo;{brandStatement.quote}&rdquo;
-      </h2>
-      <p className="mt-4 sm:mt-6 text-xs sm:text-sm font-sans font-light text-gray-600 max-w-lg mx-auto leading-relaxed">
-        {brandStatement.description}
-      </p>
-      <div className="mt-8 flex items-center justify-center gap-3">
-        <div className="h-px w-8 bg-gray-200" />
-        <span className="text-[10px] uppercase tracking-[0.25em] text-gray-400 font-sans">
-          SANAAT · PAKISTAN
+    <section className="bg-plum text-white py-16 sm:py-24 px-4 sm:px-6 lg:px-8 text-center animate-fade-in">
+      <div className="max-w-4xl mx-auto space-y-5 sm:space-y-6">
+        <span className="text-xs sm:text-sm uppercase tracking-[0.35em] text-white/80 font-sans font-medium block">
+          {heading}
         </span>
-        <div className="h-px w-8 bg-gray-200" />
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif tracking-wide text-white max-w-3xl mx-auto leading-relaxed font-normal">
+          &ldquo;{quote}&rdquo;
+        </h2>
+        <p className="mt-3 text-sm sm:text-base font-sans font-light text-white/90 max-w-xl mx-auto leading-relaxed">
+          {description}
+        </p>
+        <div className="pt-4 flex items-center justify-center gap-3">
+          <div className="h-px w-10 bg-white/30" />
+          <span className="text-[11px] uppercase tracking-[0.3em] text-white/70 font-sans font-light">
+            SANAAT · PAKISTAN
+          </span>
+          <div className="h-px w-10 bg-white/30" />
+        </div>
       </div>
     </section>
   );

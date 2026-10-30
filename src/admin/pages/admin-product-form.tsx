@@ -98,6 +98,12 @@ export function AdminProductFormPage() {
   // 12. Featured on Homepage (Section 24)
   const [isFeatured, setIsFeatured] = useState<boolean>(false);
 
+  // 13. New Arrival Status (Task 3: Admin Control)
+  const [isNewArrival, setIsNewArrival] = useState<boolean>(true);
+
+  // 14. Display Order (Task 3: Admin Control)
+  const [displayOrder, setDisplayOrder] = useState<number>(0);
+
   // Populate data when editing
   useEffect(() => {
     if (existingProduct) {
@@ -131,6 +137,14 @@ export function AdminProductFormPage() {
 
       if (existingProduct.is_featured !== undefined) {
         setIsFeatured(Boolean(existingProduct.is_featured));
+      }
+
+      if (existingProduct.is_new_arrival !== undefined) {
+        setIsNewArrival(Boolean(existingProduct.is_new_arrival));
+      }
+
+      if (existingProduct.display_order !== undefined) {
+        setDisplayOrder(Number(existingProduct.display_order) || 0);
       }
 
       if (existingProduct.product_type) {
@@ -332,6 +346,7 @@ export function AdminProductFormPage() {
         status: rawStatus as any,
         is_published: isPublished,
         is_featured: isFeatured,
+        is_new_arrival: isNewArrival,
         is_preorder: isPreorder,
         preorder_closes_at: null,
         estimated_dispatch_date: null,
@@ -343,7 +358,7 @@ export function AdminProductFormPage() {
         color: color,
         care_instructions: fabricCare === 'Dry Clean' ? 'Dry clean only.' : 'Washable (gentle cycle).',
         details: 'Graceful modest silhouette tailored with fine finishings.',
-        display_order: 0,
+        display_order: Number(displayOrder) || 0,
         low_stock_threshold: 3,
       };
 
@@ -380,11 +395,15 @@ export function AdminProductFormPage() {
       });
 
       navigate('/admin/products');
-    } catch (err) {
+    } catch (err: any) {
+      console.error('[SANAAT] Product save error:', err);
+      const msg = err?.message || err?.error_description || 'Failed to save product.';
       addToast({
         type: 'error',
-        title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to save product.',
+        title: 'Save Failed',
+        description: msg.includes('row-level security')
+          ? 'Database policy error (42501). Please apply the provided Supabase migration SQL to enable admin writes.'
+          : msg,
       });
     }
   };
@@ -698,19 +717,19 @@ export function AdminProductFormPage() {
         </div>
 
         {/* 4.4 Featured on Homepage (Section 24: Admin Control) */}
-        <div className="bg-white p-5 border border-gray-200 flex items-center justify-between">
+        <div className="bg-white p-5 border border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black block">
               Featured on Homepage
             </label>
             <p className="text-[11px] text-gray-500 font-sans mt-0.5">
-              Display this dress in the curated homepage Featured Dresses section.
+              Display this dress in the curated homepage Featured Pieces carousel.
             </p>
           </div>
           <button
             type="button"
             onClick={() => setIsFeatured(!isFeatured)}
-            className={`px-4 py-2 text-xs uppercase tracking-wider font-semibold border transition-colors ${
+            className={`w-full sm:w-auto px-4 py-2 text-xs uppercase tracking-wider font-semibold border transition-colors ${
               isFeatured
                 ? 'bg-plum text-white border-plum'
                 : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
@@ -718,6 +737,50 @@ export function AdminProductFormPage() {
           >
             {isFeatured ? '★ FEATURED (ON)' : 'NOT FEATURED (OFF)'}
           </button>
+        </div>
+
+        {/* 4.5 New Arrival Status (Task 3: Admin Control) */}
+        <div className="bg-white p-5 border border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black block">
+              New Arrival Status
+            </label>
+            <p className="text-[11px] text-gray-500 font-sans mt-0.5">
+              Flag this silhouette as a New Arrival on the storefront and New Collection pages.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsNewArrival(!isNewArrival)}
+            className={`w-full sm:w-auto px-4 py-2 text-xs uppercase tracking-wider font-semibold border transition-colors ${
+              isNewArrival
+                ? 'bg-plum text-white border-plum'
+                : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
+            }`}
+          >
+            {isNewArrival ? '✦ NEW ARRIVAL (ON)' : 'STANDARD (OFF)'}
+          </button>
+        </div>
+
+        {/* 4.6 Product Display Order (Task 3: Admin Control) */}
+        <div className="bg-white p-5 border border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <label className="text-xs font-sans font-semibold uppercase tracking-wider text-black block">
+              Display Sequence Order
+            </label>
+            <p className="text-[11px] text-gray-500 font-sans mt-0.5">
+              Sequence position on the storefront. Lower numbers appear first (e.g. 1, 2, 3).
+            </p>
+          </div>
+          <div className="w-full sm:w-32">
+            <input
+              type="number"
+              min="0"
+              value={displayOrder}
+              onChange={(e) => setDisplayOrder(parseInt(e.target.value, 10) || 0)}
+              className="w-full h-10 px-3 text-sm border border-gray-300 focus:border-plum focus:ring-1 focus:ring-plum outline-none bg-white font-mono"
+            />
+          </div>
         </div>
 
         {/* 5. Sizes & Stock (Default: S, M, L, XL per Section 17) */}

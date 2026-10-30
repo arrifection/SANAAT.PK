@@ -31,6 +31,7 @@ import { AdminInventoryPage } from '../admin/pages/admin-inventory';
 import { AdminOrdersPage } from '../admin/pages/admin-orders';
 import { AdminOrderDetailPage } from '../admin/pages/admin-order-detail';
 import { AdminCategoriesPage } from '../admin/pages/admin-categories';
+import { AdminStorefrontPage } from '../admin/pages/admin-storefront';
 
 export const router = createBrowserRouter([
   // Storefront Layout Routes
@@ -94,6 +95,7 @@ export const router = createBrowserRouter([
           { path: 'orders', element: <AdminOrdersPage /> },
           { path: 'orders/:id', element: <AdminOrderDetailPage /> },
           { path: 'categories', element: <AdminCategoriesPage /> },
+          { path: 'storefront', element: <AdminStorefrontPage /> },
         ],
       },
     ],

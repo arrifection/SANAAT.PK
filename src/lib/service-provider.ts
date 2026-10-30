@@ -45,12 +45,12 @@ export async function initializeServices(): Promise<Services> {
         timeoutPromise,
       ]);
 
-      if (test.data && test.data.length > 0) {
+      if (Array.isArray(test.data)) {
         servicesInstance = supabaseServices;
         console.log('[SANAAT] Connected to live Supabase backend');
         return servicesInstance;
       }
-      console.warn('[SANAAT] Supabase database has 0 products or timed out; using persistent local storage store.');
+      console.warn('[SANAAT] Supabase query timed out; using persistent local storage store.');
     } catch (err) {
       console.warn('[SANAAT] Supabase query failed; using persistent local storage store.', err);
     }

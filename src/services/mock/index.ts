@@ -26,7 +26,9 @@ import type {
   ProductVariant,
   Order,
   OrderItem,
+  SiteSettings,
 } from '../../types';
+import { defaultSiteSettings } from '../../content/site-content';
 
 const STORAGE_KEYS = {
   CATEGORIES: 'sanaat_categories_v4',
@@ -35,6 +37,7 @@ const STORAGE_KEYS = {
   VARIANTS: 'sanaat_variants_v4',
   ORDERS: 'sanaat_orders_v4',
   ORDER_ITEMS: 'sanaat_order_items_v4',
+  SETTINGS: 'sanaat_site_settings_v1',
 };
 
 function loadOrFallback<T>(key: string, fallback: T): T {
@@ -130,5 +133,16 @@ export function createMockServices(): Services {
     storage: createMockStorageService(),
     contact: createMockContactService(),
     dashboard: createMockDashboardService(products, variants, orders, orderItems, categories, images),
+    settings: {
+      async getSettings() {
+        return loadOrFallback(STORAGE_KEYS.SETTINGS, defaultSiteSettings);
+      },
+      async updateSettings(data: Partial<SiteSettings>) {
+        const current = loadOrFallback(STORAGE_KEYS.SETTINGS, defaultSiteSettings);
+        const updated = { ...current, ...data, updated_at: new Date().toISOString() };
+        save(STORAGE_KEYS.SETTINGS, updated);
+        return updated;
+      },
+    },
   };
 }
